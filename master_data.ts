@@ -29,8 +29,6 @@ export const SETTING_DATA = {
 
 export const CALCULATOR_DATA = {
   header: '🧮 कैलकुलेटर',
-  normalTitle: 'सामान्य कैलकुलेटर',
-  calcButtons: ['7','8','9','/','4','5','6','x','1','2','3','-','C','0','=','+'] as const,
   menu: [
     { id: 'samay', name: 'समय', sub: 'समय का हिसाब + किराया', color: '#2E9D5A', icon: '⏰' },
     { id: 'umr', name: 'उम्र', sub: 'उम्र का हिसाब', color: '#7B5AE0', icon: '🎂' },
@@ -43,12 +41,15 @@ export const CALCULATOR_DATA = {
       ratePlaceholder: 'Hourly rate (₹ / घंटा) 3000',
       buttonText: 'हिसाब लगाएं',
       color: '#2E9D5A',
-      totalLabel: 'टोटल', // Regular hours की जगह टोटल
+      totalLabel: 'टोटल',
       amountLabel: 'कुल किराया',
     },
     umr: {
       title: '🎂 उम्र का हिसाब',
-      placeholder: 'जन्म साल लिखें (जैसे 1990)',
+      dobPlaceholder: 'जन्म तिथि लिखें (जैसे 14.5.1989)',
+      todayPlaceholder: 'आज की तारीख लिखें (जैसे 8.10.2026)',
+      dobLabel: 'जन्म तिथि',
+      todayLabel: 'आज की तारीख',
       buttonText: 'उम्र निकालें',
       color: '#7B5AE0',
     },
