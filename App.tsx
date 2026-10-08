@@ -1,55 +1,88 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, StatusBar, Alert } from 'react-native';
-import { ROLES, UserRole } from './master_data';
+import React, { useState, useEffect } from 'react';
+import { View, Image, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-native';
 
 export default function App() {
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [showSplash, setShowSplash] = useState(true);
 
-  const handleRolePress = (roleId: UserRole) => {
-    const role = ROLES.find(r => r.id === roleId);
-    Alert.alert(
-      `${role?.label} चुना गया`,
-      `आपने ${role?.label} के रूप में लॉगिन किया है।`,
-      [
-        { text: 'बंद करें', style: 'cancel' },
-        { text: 'लॉगिन करें', onPress: () => console.log('Login as', roleId) }
-      ]
-    );
-  };
+  useEffect(() => {
+    // 3 सेकंड Splash दिखेगा
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F2F4F7" />
-      <View style={styles.header}>
-        <Text style={styles.title}>TARZAN KATLAM</Text>
-        <Text style={styles.subtitle}>अपनी भूमिका चुनें</Text>
+  // --- SPLASH SCREEN ---
+  if (showSplash) {
+    return (
+      <View style={styles.splashContainer}>
+        <Image 
+          source={require('./assets/splash.png')} 
+          style={styles.splashImage}
+          resizeMode="contain"
+        />
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {ROLES.map((role) => (
-          <TouchableOpacity
-            key={role.id}
-            style={[styles.roleBtn, { backgroundColor: role.color }]}
-            activeOpacity={0.85}
-            onPress={() => handleRolePress(role.id)}
-          >
-            <Text style={styles.roleText}>{role.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+    );
+  }
+
+  // --- आपका असली TARZAN KATLAM HOME SCREEN ---
+  // यहाँ आपका पुराना 8 Button वाला Code है, आप इसे अपने पुराने Code से Replace कर सकते हो
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>TARZAN KATLAM</Text>
+      <Text style={styles.subtitle}>आपका स्वागत है</Text>
+      
+      {/* यहाँ अपने 8 Buttons को ऐसे लगाओ - मैं 2 का Sample दे रहा हूँ */}
+      <TouchableOpacity style={styles.button}>
+        <Text style={styles.buttonText}>Button 1</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button}>
+        <Text style={styles.buttonText}>Button 2</Text>
+      </TouchableOpacity>
+
+      {/* बाकी 6 Button भी इसी तरह */}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F2F4F7' },
-  header: { alignItems: 'center', paddingTop: 50, paddingBottom: 16 },
-  title: { fontSize: 22, fontWeight: '800', letterSpacing: 2, color: '#111' },
-  subtitle: { fontSize: 14, color: '#666', marginTop: 4 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 16 },
-  roleBtn: {
-    width: '100%', height: 78, borderRadius: 18,
-    justifyContent: 'center', alignItems: 'center',
-    elevation: 3
+  splashContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  roleText: { color: '#fff', fontSize: 20, fontWeight: '700' }
+  splashImage: {
+    width: '90%',
+    height: '90%',
+  },
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 50,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#000',
+    padding: 15,
+    borderRadius: 10,
+    width: '90%',
+    marginVertical: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
 });
