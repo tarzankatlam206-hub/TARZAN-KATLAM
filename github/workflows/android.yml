@@ -8,14 +8,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 18, cache: npm }
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Install Dependencies
         run: npm install
+
       - name: Prebuild Android
         run: npx expo prebuild --platform android --clean
+
       - name: Create Keystore
         working-directory: android
         run: |
@@ -24,11 +34,13 @@ jobs:
           echo "STORE_PASSWORD=tarzan123" >> keystore.properties
           echo "KEY_ALIAS=tarzan" >> keystore.properties
           echo "KEY_PASSWORD=tarzan123" >> keystore.properties
+
       - name: Build Release APK
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
