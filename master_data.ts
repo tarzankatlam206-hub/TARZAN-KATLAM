@@ -38,14 +38,12 @@ export const CALCULATOR_DATA = {
   screens: {
     samay: {
       title: '⏰ समय और किराया',
-      namePlaceholder: 'नाम लिखें (जैसे टार्जन कतलाम)',
-      dateLabel: 'दिनांक',
       startLabel: 'Start time',
       endLabel: 'End time',
-      ratePlaceholder: 'Hourly rate (₹ / घंटा) जैसे 3000',
+      ratePlaceholder: 'Hourly rate (₹ / घंटा) 3000',
       buttonText: 'हिसाब लगाएं',
       color: '#2E9D5A',
-      regularHoursLabel: 'Regular hours',
+      totalLabel: 'टोटल', // Regular hours की जगह टोटल
       amountLabel: 'कुल किराया',
     },
     umr: {
