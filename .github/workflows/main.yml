@@ -1,0 +1,36 @@
+name: Build APK - TARZAN KATLAM
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 18, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Install Dependencies
+        run: npm install
+      - name: Prebuild Android
+        run: npx expo prebuild --platform android --clean
+      - name: Create Keystore
+        working-directory: android
+        run: |
+          keytool -genkey -v -keystore app/release.jks -keyalg RSA -keysize 2048 -validity 10000 -storepass tarzan123 -keypass tarzan123 -dname "CN=TARZAN KATLAM, OU=App, O=TARZAN, L=Raipur, S=CG, C=IN" -alias tarzan
+          echo "STORE_FILE=release.jks" > keystore.properties
+          echo "STORE_PASSWORD=tarzan123" >> keystore.properties
+          echo "KEY_ALIAS=tarzan" >> keystore.properties
+          echo "KEY_PASSWORD=tarzan123" >> keystore.properties
+      - name: Build Release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TARZAN-KATLAM-RELEASE-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
