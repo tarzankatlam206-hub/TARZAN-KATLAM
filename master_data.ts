@@ -39,7 +39,6 @@ export const CALCULATOR_DATA = {
   },
 };
 
-// खर्च का Master Data
 export const KHARCH_DATA = {
   header: '💰 खर्च का हिसाब',
   categoryLabel: 'खर्च की श्रेणी चुनें:',
@@ -59,41 +58,22 @@ export const KHARCH_DATA = {
     { id: 'pan', name: 'पान मसाला', color: '#78909C' },
     { id: 'anya', name: 'अन्य', color: '#A1887F' },
   ],
-  // हर Category के लिए Form के Fields - आपकी Photo जैसा
   forms: {
-    harvester_diesel: {
-      title: 'हार्वेस्टर डीजल - तिथि / लीटर / राशि',
-      fields: [
-        { key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' },
-        { key: 'litre', label: 'लीटर', placeholder: '20', keyboard: 'numeric' },
-        { key: 'rashi', label: 'राशि ₹', placeholder: '2000', keyboard: 'numeric' },
-      ],
-      paymentLabel: 'भुगतान माध्यम:',
-      paymentOptions: ['नगद', 'UPI'],
-      saveButton: 'हार्वेस्टर डीजल खर्च जोड़ें',
-    },
-    tractor_diesel: {
-      title: 'ट्रैक्टर डीजल - तिथि / लीटर / राशि',
-      fields: [
-        { key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' },
-        { key: 'litre', label: 'लीटर', placeholder: '10', keyboard: 'numeric' },
-        { key: 'rashi', label: 'राशि ₹', placeholder: '1000', keyboard: 'numeric' },
-      ],
-      paymentLabel: 'भुगतान माध्यम:',
-      paymentOptions: ['नगद', 'UPI'],
-      saveButton: 'ट्रैक्टर डीजल खर्च जोड़ें',
-    },
-    default: {
-      title: 'खर्च जोड़ें',
-      fields: [
-        { key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' },
-        { key: 'rashi', label: 'राशि ₹', placeholder: '500', keyboard: 'numeric' },
-        { key: 'note', label: 'विवरण', placeholder: 'नोट लिखें' },
-      ],
-      paymentLabel: 'भुगतान माध्यम:',
-      paymentOptions: ['नगद', 'UPI'],
-      saveButton: 'खर्च जोड़ें',
-    },
+    harvester_diesel: { title: 'हार्वेस्टर डीजल - तिथि / लीटर / राशि', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'litre', label: 'लीटर', placeholder: '20' }, { key: 'rashi', label: 'राशि ₹', placeholder: '2000' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'हार्वेस्टर डीजल खर्च जोड़ें', tableHeads: ['तिथि', 'लीटर', 'राशि ₹', 'भुगतान'] },
+    tractor_diesel: { title: 'ट्रैक्टर डीजल - तिथि / लीटर / राशि', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'litre', label: 'लीटर', placeholder: '10' }, { key: 'rashi', label: 'राशि ₹', placeholder: '1000' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'ट्रैक्टर डीजल खर्च जोड़ें', tableHeads: ['तिथि', 'लीटर', 'राशि ₹', 'भुगतान'] },
+    petrol: { title: 'पेट्रोल - तिथि / लीटर / राशि', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'litre', label: 'लीटर', placeholder: '5' }, { key: 'rashi', label: 'राशि ₹', placeholder: '500' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'पेट्रोल खर्च जोड़ें', tableHeads: ['तिथि', 'लीटर', 'राशि ₹', 'भुगतान'] },
+
+    parts: { title: 'पार्ट्स खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'parts_name', label: 'पार्ट्स का नाम', placeholder: 'फिल्टर, बेल्ट' }, { key: 'rashi', label: 'राशि ₹', placeholder: '1500' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI', 'उधारी'], saveButton: 'पार्ट्स खर्च जोड़ें', tableHeads: ['तिथि', 'पार्ट्स', 'राशि ₹', 'भुगतान'] },
+    welding: { title: 'वेल्डिंग खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'kaam', label: 'काम का विवरण', placeholder: 'ब्लेड वेल्डिंग' }, { key: 'rashi', label: 'राशि ₹', placeholder: '800' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'वेल्डिंग खर्च जोड़ें', tableHeads: ['तिथि', 'काम', 'राशि ₹', 'भुगतान'] },
+    mechanic: { title: 'मैकेनिक खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'kaam', label: 'काम', placeholder: 'इंजन रिपेयर' }, { key: 'rashi', label: 'राशि ₹', placeholder: '2000' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI', 'उधारी'], saveButton: 'मैकेनिक खर्च जोड़ें', tableHeads: ['तिथि', 'काम', 'राशि ₹', 'भुगतान'] },
+    operator: { title: 'ऑपरेटर खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'naam', label: 'ऑपरेटर नाम', placeholder: 'रामू' }, { key: 'rashi', label: 'पगार / एडवांस ₹', placeholder: '5000' }], paymentLabel: 'प्रकार:', paymentOptions: ['पगार', 'एडवांस', 'खाना'], saveButton: 'ऑपरेटर खर्च जोड़ें', tableHeads: ['तिथि', 'नाम', 'राशि ₹', 'प्रकार'] },
+    helper: { title: 'हेल्पर खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'naam', label: 'हेल्पर नाम', placeholder: 'श्याम' }, { key: 'rashi', label: 'पगार / एडवांस ₹', placeholder: '3000' }], paymentLabel: 'प्रकार:', paymentOptions: ['पगार', 'एडवांस', 'खाना'], saveButton: 'हेल्पर खर्च जोड़ें', tableHeads: ['तिथि', 'नाम', 'राशि ₹', 'प्रकार'] },
+    agent: { title: 'एजेंट कमीशन', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'kisan', label: 'किसान / गांव', placeholder: 'रमेश - तिल्दा' }, { key: 'rashi', label: 'कमीशन ₹', placeholder: '1000' }], paymentLabel: 'भुगतान:', paymentOptions: ['नगद', 'UPI', 'बकाया'], saveButton: 'एजेंट खर्च जोड़ें', tableHeads: ['तिथि', 'किसान', 'राशि ₹', 'भुगतान'] },
+    khana: { title: 'खाना खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'hotel', label: 'होटल / विवरण', placeholder: 'दोपहर का खाना' }, { key: 'rashi', label: 'राशि ₹', placeholder: '300' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'खाना खर्च जोड़ें', tableHeads: ['तिथि', 'विवरण', 'राशि ₹', 'भुगतान'] },
+    room: { title: 'रूम किराया', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'days', label: 'कितने दिन', placeholder: '5' }, { key: 'rashi', label: 'राशि ₹', placeholder: '1000' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'रूम किराया जोड़ें', tableHeads: ['तिथि', 'दिन', 'राशि ₹', 'भुगतान'] },
+    alcohol: { title: 'अल्कोहल खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'vivaran', label: 'विवरण', placeholder: 'शाम की पार्टी' }, { key: 'rashi', label: 'राशि ₹', placeholder: '500' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'अल्कोहल खर्च जोड़ें', tableHeads: ['तिथि', 'विवरण', 'राशि ₹', 'भुगतान'] },
+    pan: { title: 'पान मसाला खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'vivaran', label: 'विवरण', placeholder: 'गुटखा, सिगरेट' }, { key: 'rashi', label: 'राशि ₹', placeholder: '100' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'पान मसाला खर्च जोड़ें', tableHeads: ['तिथि', 'विवरण', 'राशि ₹', 'भुगतान'] },
+    anya: { title: 'अन्य खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'vivaran', label: 'विवरण', placeholder: 'क्या खर्च' }, { key: 'rashi', label: 'राशि ₹', placeholder: '200' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'अन्य खर्च जोड़ें', tableHeads: ['तिथि', 'विवरण', 'राशि ₹', 'भुगतान'] },
   },
 };
 
