@@ -7,11 +7,9 @@ type CalcScreen = 'main' | 'samay' | 'umr';
 type AmPm = 'AM' | 'PM';
 
 function parseTimeToMinutes(timeStr: string, ampm: AmPm): number | null {
-  // timeStr = "1.10" या "1:10"
   const s = timeStr.trim().replace('.', ':');
   const match = s.match(/(\d{1,2}):(\d{2})/);
   if (!match) {
-    // अगर सिर्फ 1.10 बिना : के
     const dotMatch = timeStr.match(/(\d{1,2})\.(\d{2})/);
     if (!dotMatch) return null;
     let h = parseInt(dotMatch[1]); const m = parseInt(dotMatch[2]);
@@ -26,6 +24,18 @@ function parseTimeToMinutes(timeStr: string, ampm: AmPm): number | null {
   return h * 60 + m;
 }
 
+function parseDateDMY(str: string): Date | null {
+  // 14.5.1989, 14-5-1989, 14/5/1989, 08.10.2026
+  const cleaned = str.trim().replace(/-/g, '.').replace(/\//g, '.');
+  const parts = cleaned.split('.');
+  if (parts.length!== 3) return null;
+  const d = parseInt(parts[0]); const m = parseInt(parts[1]); const y = parseInt(parts[2]);
+  if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+  const date = new Date(y, m-1, d);
+  if (date.getDate()!== d || date.getMonth()!== m-1 || date.getFullYear()!== y) return null;
+  return date;
+}
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [loading, setLoading] = useState(0);
@@ -33,11 +43,7 @@ export default function App() {
   const [newPassword, setNewPassword] = useState('');
   const [showCalculator, setShowCalculator] = useState(false);
   const [calcScreen, setCalcScreen] = useState<CalcScreen>('main');
-  const [calcDisplay, setCalcDisplay] = useState('0');
-  const [calcFirst, setCalcFirst] = useState<number | null>(null);
-  const [calcOp, setCalcOp] = useState<string | null>(null);
 
-  // Samay - नया सिस्टम AM/PM के साथ
   const [startTime, setStartTime] = useState('1.10');
   const [startAmPm, setStartAmPm] = useState<AmPm>('PM');
   const [endTime, setEndTime] = useState('2.40');
@@ -45,27 +51,15 @@ export default function App() {
   const [hourlyRate, setHourlyRate] = useState('3000');
   const [timeResult, setTimeResult] = useState<{hoursStr: string, amount: string} | null>(null);
 
-  const [dob, setDob] = useState(''); const [ageResult, setAgeResult] = useState('');
+  const [dobStr, setDobStr] = useState('14.5.1989');
+  const [todayStr, setTodayStr] = useState('8.10.2026');
+  const [ageResult, setAgeResult] = useState('');
 
   useEffect(() => {
     const interval = setInterval(() => setLoading(p => p >= 100? 100 : p + 1), 25);
     const timer = setTimeout(() => setShowSplash(false), 3000);
     return () => { clearInterval(interval); clearTimeout(timer); };
   }, []);
-
-  const handleCalcPress = (val: string) => {
-    if (val === 'C') { setCalcDisplay('0'); setCalcFirst(null); setCalcOp(null); return; }
-    if (['+', '-', 'x', '/'].includes(val)) { setCalcFirst(parseFloat(calcDisplay)); setCalcOp(val); setCalcDisplay('0'); return; }
-    if (val === '=') {
-      if (calcFirst!== null && calcOp) {
-        const s = parseFloat(calcDisplay); let r = 0;
-        if (calcOp === '+') r = calcFirst + s; if (calcOp === '-') r = calcFirst - s;
-        if (calcOp === 'x') r = calcFirst * s; if (calcOp === '/') r = s!== 0? calcFirst / s : 0;
-        setCalcDisplay(String(r)); setCalcFirst(null); setCalcOp(null);
-      } return;
-    }
-    setCalcDisplay(prev => prev === '0'? val : prev + val);
-  };
 
   const calcTimeWithRate = () => {
     const startM = parseTimeToMinutes(startTime, startAmPm);
@@ -78,10 +72,20 @@ export default function App() {
     const h = Math.floor(diff/60); const m = diff % 60;
     const dec = diff / 60;
     const amount = dec * rate;
-    setTimeResult({
-      hoursStr: `${h}.${String(m).padStart(2,'0')} मिनट`,
-      amount: `₹${amount.toFixed(0)}`
-    });
+    setTimeResult({ hoursStr: `${h}.${String(m).padStart(2,'0')} मिनट`, amount: `₹${amount.toFixed(0)}` });
+  };
+
+  const calcAge = () => {
+    const dob = parseDateDMY(dobStr);
+    const today = parseDateDMY(todayStr);
+    if (!dob) { Alert.alert('जन्म तिथि सही लिखें', 'जैसे 14.5.1989'); return; }
+    if (!today) { Alert.alert('आज की तारीख सही लिखें', 'जैसे 8.10.2026'); return; }
+    let years = today.getFullYear() - dob.getFullYear();
+    let months = today.getMonth() - dob.getMonth();
+    let days = today.getDate() - dob.getDate();
+    if (days < 0) { months--; const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0); days += prevMonth.getDate(); }
+    if (months < 0) { years--; months += 12; }
+    setAgeResult(`${years} साल ${months} महीना ${days} दिन`);
   };
 
   if (showSplash) {
@@ -153,25 +157,14 @@ export default function App() {
           </View>
 
           {calcScreen === 'main' && (
-            <ScrollView contentContainerStyle={{ padding: 15 }}>
-              <Text style={styles.normalTitle}>{CALCULATOR_DATA.normalTitle}</Text>
-              <Text style={styles.calcDisplay}>{calcDisplay}</Text>
-              <View style={styles.calcGrid}>
-                {CALCULATOR_DATA.calcButtons.map((b) => (
-                  <TouchableOpacity key={b} style={styles.calcBtn} onPress={() => handleCalcPress(b)}>
-                    <Text style={styles.calcBtnText}>{b}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={{ marginTop: 20 }}>
-                {CALCULATOR_DATA.menu.map((item) => (
-                  <TouchableOpacity key={item.id} style={[styles.bigCalcBtn, { backgroundColor: item.color }]} onPress={() => setCalcScreen(item.id as CalcScreen)}>
-                    <Text style={styles.bigCalcIcon}>{item.icon} {item.name}</Text>
-                    <Text style={styles.bigCalcSub}>{item.sub}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <View style={{ padding: 15, paddingTop: 20 }}>
+              {CALCULATOR_DATA.menu.map((item) => (
+                <TouchableOpacity key={item.id} style={[styles.bigCalcBtn, { backgroundColor: item.color }]} onPress={() => setCalcScreen(item.id as CalcScreen)}>
+                  <Text style={styles.bigCalcIcon}>{item.icon} {item.name}</Text>
+                  <Text style={styles.bigCalcSub}>{item.sub}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
 
           {calcScreen === 'samay' && (
@@ -188,9 +181,7 @@ export default function App() {
                   </View>
                 </>
               )}
-
               <View style={[styles.card, { marginTop: 15 }]}>
-                {/* Start Time - AM PM Box के अंदर */}
                 <Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.samay.startLabel}</Text>
                 <View style={styles.timeBox}>
                   <TextInput style={styles.timeInput} value={startTime} onChangeText={setStartTime} placeholder="1.10" keyboardType="numeric" />
@@ -199,8 +190,6 @@ export default function App() {
                     <TouchableOpacity style={[styles.ampmBtn, startAmPm==='PM' && styles.ampmActive]} onPress={()=>setStartAmPm('PM')}><Text style={[styles.ampmText, startAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity>
                   </View>
                 </View>
-
-                {/* End Time - AM PM Box के अंदर */}
                 <Text style={[styles.timeLabel, {marginTop: 15}]}>{CALCULATOR_DATA.screens.samay.endLabel}</Text>
                 <View style={styles.timeBox}>
                   <TextInput style={styles.timeInput} value={endTime} onChangeText={setEndTime} placeholder="2.40" keyboardType="numeric" />
@@ -209,33 +198,38 @@ export default function App() {
                     <TouchableOpacity style={[styles.ampmBtn, endAmPm==='PM' && styles.ampmActive]} onPress={()=>setEndAmPm('PM')}><Text style={[styles.ampmText, endAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity>
                   </View>
                 </View>
-
                 <Text style={[styles.timeLabel, { marginTop: 15 }]}>Hourly rate</Text>
                 <TextInput style={styles.input} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="numeric" placeholder={CALCULATOR_DATA.screens.samay.ratePlaceholder} />
-
                 <TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.samay.color, marginTop: 20 }]} onPress={calcTimeWithRate}>
                   <Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.samay.buttonText}</Text>
                 </TouchableOpacity>
-
-                {timeResult && (
-                  <Text style={styles.exampleText}>{startTime} {startAmPm} से {endTime} {endAmPm} = {timeResult.hoursStr} x {hourlyRate} = {timeResult.amount}</Text>
-                )}
               </View>
             </ScrollView>
           )}
 
           {calcScreen === 'umr' && (
-            <View style={{ padding: 20 }}>
+            <ScrollView contentContainerStyle={{ padding: 20 }}>
               <Text style={styles.normalTitle}>{CALCULATOR_DATA.screens.umr.title}</Text>
-              <TextInput style={styles.input} placeholder={CALCULATOR_DATA.screens.umr.placeholder} keyboardType="numeric" value={dob} onChangeText={setDob} />
-              <TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.umr.color, marginTop: 15 }]} onPress={() => {
-                const y=parseInt(dob), cur=new Date().getFullYear();
-                setAgeResult(isNaN(y)? 'साल लिखें' : `उम्र: ${cur-y} साल`);
-              }}>
-                <Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.umr.buttonText}</Text>
-              </TouchableOpacity>
-              {ageResult? <Text style={styles.resultText}>{ageResult}</Text> : null}
-            </View>
+
+              <View style={styles.card}>
+                <Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.umr.dobLabel}</Text>
+                <TextInput style={styles.input} value={dobStr} onChangeText={setDobStr} placeholder={CALCULATOR_DATA.screens.umr.dobPlaceholder} keyboardType="numeric" />
+
+                <Text style={[styles.timeLabel, {marginTop: 15}]}>{CALCULATOR_DATA.screens.umr.todayLabel}</Text>
+                <TextInput style={styles.input} value={todayStr} onChangeText={setTodayStr} placeholder={CALCULATOR_DATA.screens.umr.todayPlaceholder} keyboardType="numeric" />
+
+                <TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.umr.color, marginTop: 20 }]} onPress={calcAge}>
+                  <Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.umr.buttonText}</Text>
+                </TouchableOpacity>
+
+                {ageResult? (
+                  <View style={[styles.resultCard, { backgroundColor: '#E6E6FA', marginTop: 20 }]}>
+                    <Text style={styles.resultLabel}>उम्र</Text>
+                    <Text style={styles.resultValue}>{ageResult}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </ScrollView>
           )}
         </View>
       </Modal>
@@ -275,17 +269,12 @@ const styles = StyleSheet.create({
   calcPageTitle: { fontSize: 18, fontWeight: 'bold' },
   backText: { fontSize: 16, color: '#007AFF', fontWeight: '600' },
   normalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  calcDisplay: { fontSize: 32, fontWeight: 'bold', textAlign: 'right', backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 15, elevation: 1 },
-  calcGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  calcBtn: { width: '22%', backgroundColor: '#fff', borderRadius: 10, padding: 15, alignItems: 'center', marginBottom: 10, elevation: 1 },
-  calcBtnText: { fontSize: 20, fontWeight: 'bold' },
-  bigCalcBtn: { borderRadius: 18, padding: 20, alignItems: 'center', marginBottom: 15, elevation: 3 },
-  bigCalcIcon: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  bigCalcSub: { fontSize: 14, color: '#fff', marginTop: 4 },
-  resultText: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginTop: 20, color: '#000' },
+  bigCalcBtn: { borderRadius: 18, padding: 25, alignItems: 'center', marginBottom: 20, elevation: 3 },
+  bigCalcIcon: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  bigCalcSub: { fontSize: 15, color: '#fff', marginTop: 6 },
   resultCard: { borderRadius: 12, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   resultLabel: { fontSize: 14, color: '#555' },
-  resultValue: { fontSize: 18, fontWeight: 'bold', color: '#000' },
+  resultValue: { fontSize: 16, fontWeight: 'bold', color: '#000' },
   timeLabel: { fontSize: 14, color: '#555', marginBottom: 5 },
   timeBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 10 },
   timeInput: { flex: 1, paddingVertical: 12, fontSize: 16 },
@@ -294,5 +283,4 @@ const styles = StyleSheet.create({
   ampmActive: { backgroundColor: '#2E9D5A' },
   ampmText: { fontSize: 13, fontWeight: 'bold', color: '#555' },
   ampmActiveText: { color: '#fff' },
-  exampleText: { textAlign: 'center', marginTop: 15, color: '#666', fontSize: 13 },
 });
