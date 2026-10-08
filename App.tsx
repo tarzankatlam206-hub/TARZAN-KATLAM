@@ -4,15 +4,24 @@ import { HOME_BUTTONS, NAV_TABS, SETTING_DATA, CALCULATOR_DATA } from './master_
 
 type TabKey = 'home' | 'kharch' | 'order' | 'setting';
 type CalcScreen = 'main' | 'samay' | 'umr';
+type AmPm = 'AM' | 'PM';
 
-function parseTimeToMinutes(str: string): number | null {
-  // अब 1.10 pm और 1:10 pm दोनों चलेगा, लेकिन Display में Dot दिखायेंगे
-  const s = str.toLowerCase().trim().replace('.', ':');
-  const match = s.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
-  if (!match) return null;
-  let h = parseInt(match[1]); const m = parseInt(match[2]); const ap = match[3];
-  if (ap === 'pm' && h < 12) h += 12;
-  if (ap === 'am' && h === 12) h = 0;
+function parseTimeToMinutes(timeStr: string, ampm: AmPm): number | null {
+  // timeStr = "1.10" या "1:10"
+  const s = timeStr.trim().replace('.', ':');
+  const match = s.match(/(\d{1,2}):(\d{2})/);
+  if (!match) {
+    // अगर सिर्फ 1.10 बिना : के
+    const dotMatch = timeStr.match(/(\d{1,2})\.(\d{2})/);
+    if (!dotMatch) return null;
+    let h = parseInt(dotMatch[1]); const m = parseInt(dotMatch[2]);
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  }
+  let h = parseInt(match[1]); const m = parseInt(match[2]);
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
   if (h > 23 || m > 59) return null;
   return h * 60 + m;
 }
@@ -28,10 +37,11 @@ export default function App() {
   const [calcFirst, setCalcFirst] = useState<number | null>(null);
   const [calcOp, setCalcOp] = useState<string | null>(null);
 
-  const [personName, setPersonName] = useState('टार्जन कतलाम');
-  const [dateStr, setDateStr] = useState('08-Oct-2026');
-  const [startTime, setStartTime] = useState('1.10 pm');
-  const [endTime, setEndTime] = useState('2.40 pm');
+  // Samay - नया सिस्टम AM/PM के साथ
+  const [startTime, setStartTime] = useState('1.10');
+  const [startAmPm, setStartAmPm] = useState<AmPm>('PM');
+  const [endTime, setEndTime] = useState('2.40');
+  const [endAmPm, setEndAmPm] = useState<AmPm>('PM');
   const [hourlyRate, setHourlyRate] = useState('3000');
   const [timeResult, setTimeResult] = useState<{hoursStr: string, amount: string} | null>(null);
 
@@ -58,19 +68,18 @@ export default function App() {
   };
 
   const calcTimeWithRate = () => {
-    const startM = parseTimeToMinutes(startTime);
-    const endM = parseTimeToMinutes(endTime);
+    const startM = parseTimeToMinutes(startTime, startAmPm);
+    const endM = parseTimeToMinutes(endTime, endAmPm);
     const rate = parseFloat(hourlyRate);
-    if (startM === null || endM === null) { Alert.alert('समय सही लिखें', 'जैसे 1.10 pm और 2.40 pm'); return; }
+    if (startM === null || endM === null) { Alert.alert('समय सही लिखें', 'जैसे 1.10'); return; }
     if (isNaN(rate)) { Alert.alert('Hourly rate लिखें'); return; }
     let diff = endM - startM;
     if (diff < 0) diff += 24*60;
     const h = Math.floor(diff/60); const m = diff % 60;
     const dec = diff / 60;
     const amount = dec * rate;
-    // अब डॉट में दिखायेंगे - 1.30
     setTimeResult({
-      hoursStr: `${h}.${String(m).padStart(2,'0')}`,
+      hoursStr: `${h}.${String(m).padStart(2,'0')} मिनट`,
       amount: `₹${amount.toFixed(0)}`
     });
   };
@@ -170,43 +179,46 @@ export default function App() {
               {timeResult && (
                 <>
                   <View style={[styles.resultCard, { backgroundColor: '#E6E6FA' }]}>
-                    <Text style={styles.resultLabel}>Regular hours</Text>
+                    <Text style={styles.resultLabel}>{CALCULATOR_DATA.screens.samay.totalLabel}</Text>
                     <Text style={styles.resultValue}>{timeResult.hoursStr}</Text>
                   </View>
                   <View style={[styles.resultCard, { backgroundColor: '#FFF8DC', marginTop: 10 }]}>
-                    <Text style={styles.resultLabel}>कुल किराया</Text>
+                    <Text style={styles.resultLabel}>{CALCULATOR_DATA.screens.samay.amountLabel}</Text>
                     <Text style={styles.resultValue}>{timeResult.amount}</Text>
                   </View>
                 </>
               )}
 
               <View style={[styles.card, { marginTop: 15 }]}>
-                <TextInput style={styles.input} value={personName} onChangeText={setPersonName} placeholder="नाम" />
-                <View style={styles.dateRow}>
-                  <Text style={styles.dateLabel}>Date</Text>
-                  <TextInput style={styles.dateInput} value={dateStr} onChangeText={setDateStr} />
+                {/* Start Time - AM PM Box के अंदर */}
+                <Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.samay.startLabel}</Text>
+                <View style={styles.timeBox}>
+                  <TextInput style={styles.timeInput} value={startTime} onChangeText={setStartTime} placeholder="1.10" keyboardType="numeric" />
+                  <View style={styles.ampmContainer}>
+                    <TouchableOpacity style={[styles.ampmBtn, startAmPm==='AM' && styles.ampmActive]} onPress={()=>setStartAmPm('AM')}><Text style={[styles.ampmText, startAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity>
+                    <TouchableOpacity style={[styles.ampmBtn, startAmPm==='PM' && styles.ampmActive]} onPress={()=>setStartAmPm('PM')}><Text style={[styles.ampmText, startAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity>
+                  </View>
                 </View>
 
-                <View style={styles.timeRow}>
-                  <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.timeLabel}>Start time</Text>
-                    <TextInput style={styles.input} value={startTime} onChangeText={setStartTime} placeholder="1.10 pm" />
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={styles.timeLabel}>End time</Text>
-                    <TextInput style={styles.input} value={endTime} onChangeText={setEndTime} placeholder="2.40 pm" />
+                {/* End Time - AM PM Box के अंदर */}
+                <Text style={[styles.timeLabel, {marginTop: 15}]}>{CALCULATOR_DATA.screens.samay.endLabel}</Text>
+                <View style={styles.timeBox}>
+                  <TextInput style={styles.timeInput} value={endTime} onChangeText={setEndTime} placeholder="2.40" keyboardType="numeric" />
+                  <View style={styles.ampmContainer}>
+                    <TouchableOpacity style={[styles.ampmBtn, endAmPm==='AM' && styles.ampmActive]} onPress={()=>setEndAmPm('AM')}><Text style={[styles.ampmText, endAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity>
+                    <TouchableOpacity style={[styles.ampmBtn, endAmPm==='PM' && styles.ampmActive]} onPress={()=>setEndAmPm('PM')}><Text style={[styles.ampmText, endAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity>
                   </View>
                 </View>
 
                 <Text style={[styles.timeLabel, { marginTop: 15 }]}>Hourly rate</Text>
-                <TextInput style={styles.input} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="numeric" placeholder="3000" />
+                <TextInput style={styles.input} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="numeric" placeholder={CALCULATOR_DATA.screens.samay.ratePlaceholder} />
 
-                <TouchableOpacity style={[styles.blueButton, { backgroundColor: '#2E9D5A', marginTop: 20 }]} onPress={calcTimeWithRate}>
-                  <Text style={styles.blueButtonText}>हिसाब लगाएं</Text>
+                <TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.samay.color, marginTop: 20 }]} onPress={calcTimeWithRate}>
+                  <Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.samay.buttonText}</Text>
                 </TouchableOpacity>
 
                 {timeResult && (
-                  <Text style={styles.exampleText}>{startTime} से {endTime} = {timeResult.hoursStr} घंटा x {hourlyRate} = {timeResult.amount}</Text>
+                  <Text style={styles.exampleText}>{startTime} {startAmPm} से {endTime} {endAmPm} = {timeResult.hoursStr} x {hourlyRate} = {timeResult.amount}</Text>
                 )}
               </View>
             </ScrollView>
@@ -274,10 +286,13 @@ const styles = StyleSheet.create({
   resultCard: { borderRadius: 12, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   resultLabel: { fontSize: 14, color: '#555' },
   resultValue: { fontSize: 18, fontWeight: 'bold', color: '#000' },
-  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 15, backgroundColor: '#f9f9f9', padding: 10, borderRadius: 10 },
-  dateLabel: { fontSize: 16 },
-  dateInput: { backgroundColor: '#e0e0e0', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 6, minWidth: 120, textAlign: 'center' },
-  timeRow: { flexDirection: 'row', marginTop: 15 },
   timeLabel: { fontSize: 14, color: '#555', marginBottom: 5 },
+  timeBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 10 },
+  timeInput: { flex: 1, paddingVertical: 12, fontSize: 16 },
+  ampmContainer: { flexDirection: 'row', backgroundColor: '#eee', borderRadius: 20, padding: 3 },
+  ampmBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15 },
+  ampmActive: { backgroundColor: '#2E9D5A' },
+  ampmText: { fontSize: 13, fontWeight: 'bold', color: '#555' },
+  ampmActiveText: { color: '#fff' },
   exampleText: { textAlign: 'center', marginTop: 15, color: '#666', fontSize: 13 },
 });
