@@ -6,7 +6,7 @@ type TabKey = 'home' | 'kharch' | 'order' | 'setting';
 type CalcScreen = 'main' | 'samay' | 'umr';
 
 function parseTimeToMinutes(str: string): number | null {
-  // accepts "1:10 pm", "1.10 pm", "13:10", "2:40 pm"
+  // अब 1.10 pm और 1:10 pm दोनों चलेगा, लेकिन Display में Dot दिखायेंगे
   const s = str.toLowerCase().trim().replace('.', ':');
   const match = s.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
   if (!match) return null;
@@ -28,13 +28,12 @@ export default function App() {
   const [calcFirst, setCalcFirst] = useState<number | null>(null);
   const [calcOp, setCalcOp] = useState<string | null>(null);
 
-  // Samay system
   const [personName, setPersonName] = useState('टार्जन कतलाम');
   const [dateStr, setDateStr] = useState('08-Oct-2026');
-  const [startTime, setStartTime] = useState('1:10 pm');
-  const [endTime, setEndTime] = useState('2:40 pm');
+  const [startTime, setStartTime] = useState('1.10 pm');
+  const [endTime, setEndTime] = useState('2.40 pm');
   const [hourlyRate, setHourlyRate] = useState('3000');
-  const [timeResult, setTimeResult] = useState<{hoursStr: string, hoursDec: string, amount: string} | null>(null);
+  const [timeResult, setTimeResult] = useState<{hoursStr: string, amount: string} | null>(null);
 
   const [dob, setDob] = useState(''); const [ageResult, setAgeResult] = useState('');
 
@@ -62,17 +61,17 @@ export default function App() {
     const startM = parseTimeToMinutes(startTime);
     const endM = parseTimeToMinutes(endTime);
     const rate = parseFloat(hourlyRate);
-    if (startM === null || endM === null) { Alert.alert('समय सही लिखें', 'जैसे 1:10 pm और 2:40 pm'); return; }
+    if (startM === null || endM === null) { Alert.alert('समय सही लिखें', 'जैसे 1.10 pm और 2.40 pm'); return; }
     if (isNaN(rate)) { Alert.alert('Hourly rate लिखें'); return; }
     let diff = endM - startM;
-    if (diff < 0) diff += 24*60; // next day
+    if (diff < 0) diff += 24*60;
     const h = Math.floor(diff/60); const m = diff % 60;
     const dec = diff / 60;
     const amount = dec * rate;
+    // अब डॉट में दिखायेंगे - 1.30
     setTimeResult({
-      hoursStr: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`,
-      hoursDec: `${dec.toFixed(2)} घंटा`,
-      amount: `₹${amount.toFixed(2)}`
+      hoursStr: `${h}.${String(m).padStart(2,'0')}`,
+      amount: `₹${amount.toFixed(0)}`
     });
   };
 
@@ -168,47 +167,46 @@ export default function App() {
 
           {calcScreen === 'samay' && (
             <ScrollView contentContainerStyle={{ padding: 15 }}>
-              {/* Result Cards - Photo जैसा */}
               {timeResult && (
                 <>
                   <View style={[styles.resultCard, { backgroundColor: '#E6E6FA' }]}>
-                    <Text style={styles.resultLabel}>{CALCULATOR_DATA.screens.samay.regularHoursLabel}</Text>
-                    <Text style={styles.resultValue}>{timeResult.hoursStr} ({timeResult.hoursDec})</Text>
+                    <Text style={styles.resultLabel}>Regular hours</Text>
+                    <Text style={styles.resultValue}>{timeResult.hoursStr}</Text>
                   </View>
                   <View style={[styles.resultCard, { backgroundColor: '#FFF8DC', marginTop: 10 }]}>
-                    <Text style={styles.resultLabel}>{CALCULATOR_DATA.screens.samay.amountLabel}</Text>
+                    <Text style={styles.resultLabel}>कुल किराया</Text>
                     <Text style={styles.resultValue}>{timeResult.amount}</Text>
                   </View>
                 </>
               )}
 
               <View style={[styles.card, { marginTop: 15 }]}>
-                <TextInput style={styles.input} value={personName} onChangeText={setPersonName} placeholder={CALCULATOR_DATA.screens.samay.namePlaceholder} />
+                <TextInput style={styles.input} value={personName} onChangeText={setPersonName} placeholder="नाम" />
                 <View style={styles.dateRow}>
-                  <Text style={styles.dateLabel}>{CALCULATOR_DATA.screens.samay.dateLabel}</Text>
-                  <TextInput style={styles.dateInput} value={dateStr} onChangeText={setDateStr} placeholder="08-Oct-2026" />
+                  <Text style={styles.dateLabel}>Date</Text>
+                  <TextInput style={styles.dateInput} value={dateStr} onChangeText={setDateStr} />
                 </View>
 
                 <View style={styles.timeRow}>
                   <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.samay.startLabel}</Text>
-                    <TextInput style={styles.input} value={startTime} onChangeText={setStartTime} placeholder="1:10 pm" />
+                    <Text style={styles.timeLabel}>Start time</Text>
+                    <TextInput style={styles.input} value={startTime} onChangeText={setStartTime} placeholder="1.10 pm" />
                   </View>
                   <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.samay.endLabel}</Text>
-                    <TextInput style={styles.input} value={endTime} onChangeText={setEndTime} placeholder="2:40 pm" />
+                    <Text style={styles.timeLabel}>End time</Text>
+                    <TextInput style={styles.input} value={endTime} onChangeText={setEndTime} placeholder="2.40 pm" />
                   </View>
                 </View>
 
                 <Text style={[styles.timeLabel, { marginTop: 15 }]}>Hourly rate</Text>
-                <TextInput style={styles.input} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="numeric" placeholder={CALCULATOR_DATA.screens.samay.ratePlaceholder} />
+                <TextInput style={styles.input} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="numeric" placeholder="3000" />
 
-                <TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.samay.color, marginTop: 20 }]} onPress={calcTimeWithRate}>
-                  <Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.samay.buttonText}</Text>
+                <TouchableOpacity style={[styles.blueButton, { backgroundColor: '#2E9D5A', marginTop: 20 }]} onPress={calcTimeWithRate}>
+                  <Text style={styles.blueButtonText}>हिसाब लगाएं</Text>
                 </TouchableOpacity>
 
                 {timeResult && (
-                  <Text style={styles.exampleText}>Example: 1:10 pm से 2:40 pm = 1.30 घंटा x 3000 = ₹4500</Text>
+                  <Text style={styles.exampleText}>{startTime} से {endTime} = {timeResult.hoursStr} घंटा x {hourlyRate} = {timeResult.amount}</Text>
                 )}
               </View>
             </ScrollView>
