@@ -4,7 +4,13 @@ export interface HomeButton {
   id: string;
   name: string;
   color: string;
-  icon?: string;
+}
+
+export interface NavTab {
+  id: string;
+  name: string;
+  icon: string;
+  key: 'home' | 'kharch' | 'order' | 'setting';
 }
 
 export const HOME_BUTTONS: HomeButton[] = [
@@ -18,5 +24,12 @@ export const HOME_BUTTONS: HomeButton[] = [
   { id: 'mechanic', name: 'मैकेनिक', color: '#6D4C41' },
 ];
 
-// बाद में यहाँ और Master Data जोड़ सकते हो
+// Bottom Navigation Data - अब यहीं रहेगा
+export const NAV_TABS: NavTab[] = [
+  { id: 'nav_home', name: 'होम', icon: '🏠', key: 'home' },
+  { id: 'nav_kharch', name: 'खर्च', icon: '💰', key: 'kharch' },
+  { id: 'nav_order', name: 'ऑर्डर', icon: '📦', key: 'order' },
+  { id: 'nav_setting', name: 'सेटिंग', icon: '⚙️', key: 'setting' },
+];
+
 export const APP_NAME = "TARZAN KATLAM";
