@@ -16,28 +16,31 @@ jobs:
       - name: Install
         run: npm install --legacy-peer-deps
         
-      - name: Prebuild
+      - name: Prebuild Android
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Create Keystore for Release
+      - name: Create Keystore
         working-directory: android
         run: |
           keytool -genkey -v -keystore app/release.jks -keyalg RSA -keysize 2048 -validity 10000 -storepass tarzan123 -keypass tarzan123 -dname "CN=TARZAN, OU=App, O=TARZAN, L=Raipur, S=CG, C=IN" -alias tarzan
-          echo "STORE_FILE=release.jks" > keystore.properties
-          echo "STORE_PASSWORD=tarzan123" >> keystore.properties
-          echo "KEY_ALIAS=tarzan" >> keystore.properties
-          echo "KEY_PASSWORD=tarzan123" >> keystore.properties
-          echo "android { signingConfigs { release { storeFile file('release.jks'); storePassword 'tarzan123'; keyAlias 'tarzan'; keyPassword 'tarzan123' } } buildTypes { release { signingConfig signingConfigs.release } } }" > app/build-signing.gradle
-          echo "apply from: 'build-signing.gradle'" >> app/build.gradle
+          echo "MYAPP_RELEASE_STORE_FILE=release.jks" > app/keystore.properties
+          echo "MYAPP_RELEASE_KEY_ALIAS=tarzan" >> app/keystore.properties
+          echo "MYAPP_RELEASE_STORE_PASSWORD=tarzan123" >> app/keystore.properties
+          echo "MYAPP_RELEASE_KEY_PASSWORD=tarzan123" >> app/keystore.properties
+          echo "STORE_FILE=release.jks" >> app/keystore.properties
+          echo "STORE_PASSWORD=tarzan123" >> app/keystore.properties
+          echo "KEY_ALIAS=tarzan" >> app/keystore.properties
+          echo "KEY_PASSWORD=tarzan123" >> app/keystore.properties
+          ls -lh app/
 
       - name: Build RELEASE APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload RELEASE APK
         uses: actions/upload-artifact@v4
         with:
-          name: TARZAN-KATLAM-RELEASE-APK-FINAL
+          name: TARZAN-KATLAM-RELEASE-FINAL
           path: android/app/build/outputs/apk/release/app-release.apk
