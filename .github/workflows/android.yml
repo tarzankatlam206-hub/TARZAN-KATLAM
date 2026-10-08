@@ -1,4 +1,4 @@
-name: Build APK
+name: Build RELEASE APK
 on: [push, workflow_dispatch]
 jobs:
   build:
@@ -12,10 +12,32 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: npm install
-      - run: npx expo prebuild --platform android --no-install
-      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+          
+      - name: Install
+        run: npm install --legacy-peer-deps
+        
+      - name: Prebuild
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Create Keystore for Release
+        working-directory: android
+        run: |
+          keytool -genkey -v -keystore app/release.jks -keyalg RSA -keysize 2048 -validity 10000 -storepass tarzan123 -keypass tarzan123 -dname "CN=TARZAN, OU=App, O=TARZAN, L=Raipur, S=CG, C=IN" -alias tarzan
+          echo "STORE_FILE=release.jks" > keystore.properties
+          echo "STORE_PASSWORD=tarzan123" >> keystore.properties
+          echo "KEY_ALIAS=tarzan" >> keystore.properties
+          echo "KEY_PASSWORD=tarzan123" >> keystore.properties
+          echo "android { signingConfigs { release { storeFile file('release.jks'); storePassword 'tarzan123'; keyAlias 'tarzan'; keyPassword 'tarzan123' } } buildTypes { release { signingConfig signingConfigs.release } } }" > app/build-signing.gradle
+          echo "apply from: 'build-signing.gradle'" >> app/build.gradle
+
+      - name: Build RELEASE APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Upload RELEASE APK
+        uses: actions/upload-artifact@v4
         with:
-          name: TARZAN-KATLAM-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: TARZAN-KATLAM-RELEASE-APK-FINAL
+          path: android/app/build/outputs/apk/release/app-release.apk
