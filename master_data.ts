@@ -21,21 +21,40 @@ export const NAV_TABS: NavTab[] = [
   { id: 'nav_setting', name: 'सेटिंग', icon: '⚙️', key: 'setting' },
 ];
 
-// SETTING का पूरा Master Data - आपकी फोटो जैसा
 export const SETTING_DATA = {
   header: '⚙️ सेटिंग',
-  calculator: {
-    title: '🧮 कैलकुलेटर',
-    buttonText: '🧮  कैलकुलेटर खोलें',
-    buttonColor: '#7A9BDF',
-  },
-  password: {
-    title: '🔑 पासवर्ड बदलें',
-    placeholder: 'नया पासवर्ड लिखें',
-    buttonText: 'पासवर्ड सुरक्षित करें',
-    buttonColor: '#7AAE8A',
-  },
+  calculator: { title: '🧮 कैलकुलेटर', buttonText: '🧮 कैलकुलेटर खोलें', buttonColor: '#7A9BDF' },
+  password: { title: '🔑 पासवर्ड बदलें', placeholder: 'नया पासवर्ड लिखें', buttonText: 'पासवर्ड सुरक्षित करें', buttonColor: '#7AAE8A' },
+};
+
+export const CALCULATOR_DATA = {
+  header: '🧮 कैलकुलेटर',
+  normalTitle: 'सामान्य कैलकुलेटर',
   calcButtons: ['7','8','9','/','4','5','6','x','1','2','3','-','C','0','=','+'] as const,
+  menu: [
+    { id: 'samay', name: 'समय', sub: 'समय का हिसाब + किराया', color: '#2E9D5A', icon: '⏰' },
+    { id: 'umr', name: 'उम्र', sub: 'उम्र का हिसाब', color: '#7B5AE0', icon: '🎂' },
+  ],
+  screens: {
+    samay: {
+      title: '⏰ समय और किराया',
+      namePlaceholder: 'नाम लिखें (जैसे टार्जन कतलाम)',
+      dateLabel: 'दिनांक',
+      startLabel: 'Start time',
+      endLabel: 'End time',
+      ratePlaceholder: 'Hourly rate (₹ / घंटा) जैसे 3000',
+      buttonText: 'हिसाब लगाएं',
+      color: '#2E9D5A',
+      regularHoursLabel: 'Regular hours',
+      amountLabel: 'कुल किराया',
+    },
+    umr: {
+      title: '🎂 उम्र का हिसाब',
+      placeholder: 'जन्म साल लिखें (जैसे 1990)',
+      buttonText: 'उम्र निकालें',
+      color: '#7B5AE0',
+    },
+  },
 };
 
 export const APP_NAME = "TARZAN KATLAM";
