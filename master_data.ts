@@ -1,4 +1,4 @@
-// TARZAN KATLAM - Master Data
+// TARZAN KATLAM - Master Data - UPDATED WITH BILL SYSTEM
 
 export interface HomeButton { id: string; name: string; color: string; }
 export interface NavTab { id: string; name: string; icon: string; key: 'home' | 'kharch' | 'order' | 'setting'; }
@@ -30,11 +30,31 @@ export const SETTING_DATA = {
 export const CALCULATOR_DATA = {
   header: '🧮 कैलकुलेटर',
   menu: [
-    { id: 'samay', name: 'समय', sub: 'समय का हिसाब + किराया', color: '#2E9D5A', icon: '⏰' },
+    { id: 'samay', name: 'समय', sub: 'समय का हिसाब + किराया + बिल', color: '#2E9D5A', icon: '⏰' },
     { id: 'umr', name: 'उम्र', sub: 'उम्र का हिसाब', color: '#7B5AE0', icon: '🎂' },
   ],
   screens: {
-    samay: { title: '⏰ समय और किराया', startLabel: 'Start time', endLabel: 'End time', ratePlaceholder: 'Hourly rate (₹ / घंटा) 3000', buttonText: 'हिसाब लगाएं', color: '#2E9D5A', totalLabel: 'टोटल', amountLabel: 'कुल किराया' },
+    samay: {
+      title: '⏰ समय और किराया बिल',
+      nameLabel: 'किसान का नाम',
+      namePlaceholder: 'जैसे - राकेश साहू',
+      pataLabel: 'पता / गांव',
+      pataPlaceholder: 'जैसे - रहरपुर, कांकेर',
+      mobileLabel: 'मोबाइल नंबर',
+      mobilePlaceholder: 'जैसे - 9876543210',
+      dinankLabel: 'दिनांक',
+      dinankPlaceholder: '8.10.2026',
+      startLabel: 'Start time',
+      endLabel: 'End time',
+      ratePlaceholder: 'Hourly rate (₹ / घंटा) 3000',
+      buttonText: 'हिसाब लगाएं',
+      saveButtonText: '💾 सेव करें और बिल बनाएं',
+      color: '#2E9D5A',
+      totalLabel: 'टोटल समय',
+      amountLabel: 'कुल किराया',
+      listTitle: '📋 सेव किए हुए बिल',
+      shareButtonText: '📲 किसान को भेजें'
+    },
     umr: { title: '🎂 उम्र का हिसाब', dobPlaceholder: 'जन्म तिथि लिखें (जैसे 14.5.1989)', todayPlaceholder: 'आज की तारीख लिखें (जैसे 8.10.2026)', dobLabel: 'जन्म तिथि', todayLabel: 'आज की तारीख', buttonText: 'उम्र निकालें', color: '#7B5AE0' },
   },
 };
@@ -62,7 +82,6 @@ export const KHARCH_DATA = {
     harvester_diesel: { title: 'हार्वेस्टर डीजल - तिथि / लीटर / राशि', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'litre', label: 'लीटर', placeholder: '20' }, { key: 'rashi', label: 'राशि ₹', placeholder: '2000' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'हार्वेस्टर डीजल खर्च जोड़ें', tableHeads: ['तिथि', 'लीटर', 'राशि ₹', 'भुगतान'] },
     tractor_diesel: { title: 'ट्रैक्टर डीजल - तिथि / लीटर / राशि', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'litre', label: 'लीटर', placeholder: '10' }, { key: 'rashi', label: 'राशि ₹', placeholder: '1000' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'ट्रैक्टर डीजल खर्च जोड़ें', tableHeads: ['तिथि', 'लीटर', 'राशि ₹', 'भुगतान'] },
     petrol: { title: 'पेट्रोल - तिथि / लीटर / राशि', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'litre', label: 'लीटर', placeholder: '5' }, { key: 'rashi', label: 'राशि ₹', placeholder: '500' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'पेट्रोल खर्च जोड़ें', tableHeads: ['तिथि', 'लीटर', 'राशि ₹', 'भुगतान'] },
-
     parts: { title: 'पार्ट्स खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'parts_name', label: 'पार्ट्स का नाम', placeholder: 'फिल्टर, बेल्ट' }, { key: 'rashi', label: 'राशि ₹', placeholder: '1500' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI', 'उधारी'], saveButton: 'पार्ट्स खर्च जोड़ें', tableHeads: ['तिथि', 'पार्ट्स', 'राशि ₹', 'भुगतान'] },
     welding: { title: 'वेल्डिंग खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'kaam', label: 'काम का विवरण', placeholder: 'ब्लेड वेल्डिंग' }, { key: 'rashi', label: 'राशि ₹', placeholder: '800' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'वेल्डिंग खर्च जोड़ें', tableHeads: ['तिथि', 'काम', 'राशि ₹', 'भुगतान'] },
     mechanic: { title: 'मैकेनिक खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'kaam', label: 'काम', placeholder: 'इंजन रिपेयर' }, { key: 'rashi', label: 'राशि ₹', placeholder: '2000' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI', 'उधारी'], saveButton: 'मैकेनिक खर्च जोड़ें', tableHeads: ['तिथि', 'काम', 'राशि ₹', 'भुगतान'] },
@@ -76,5 +95,4 @@ export const KHARCH_DATA = {
     anya: { title: 'अन्य खर्च', fields: [{ key: 'tithi', label: 'तिथि', placeholder: '8.10.2026' }, { key: 'vivaran', label: 'विवरण', placeholder: 'क्या खर्च' }, { key: 'rashi', label: 'राशि ₹', placeholder: '200' }], paymentLabel: 'भुगतान माध्यम:', paymentOptions: ['नगद', 'UPI'], saveButton: 'अन्य खर्च जोड़ें', tableHeads: ['तिथि', 'विवरण', 'राशि ₹', 'भुगतान'] },
   },
 };
-
 export const APP_NAME = "TARZAN KATLAM";
