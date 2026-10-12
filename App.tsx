@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, TextInput, Modal, Share } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HOME_BUTTONS, NAV_TABS, SETTING_DATA, CALCULATOR_DATA, KHARCH_DATA } from './master_data';
 
 type TabKey = 'home' | 'kharch' | 'order' | 'setting';
@@ -33,8 +32,6 @@ interface SamayBill {
   hourlyRate: string; totalHours: string; totalAmount: string; totalMinutes: number;
 }
 
-const STORAGE_KEY = 'TARZAN_SAMAY_BILLS_V2';
-
 export default function App() {
   const [showSplash, setShowSplash] = useState(true); const [loading, setLoading] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>('home');
@@ -44,12 +41,12 @@ export default function App() {
   const [kisanName, setKisanName] = useState('');
   const [kisanPata, setKisanPata] = useState('');
   const [kisanMobile, setKisanMobile] = useState('');
-  const [kisanDinank, setKisanDinank] = useState('');
-  const [startTime, setStartTime] = useState('');
+  const [kisanDinank, setKisanDinank] = useState('12.10.2026');
+  const [startTime, setStartTime] = useState('8.39');
   const [startAmPm, setStartAmPm] = useState<AmPm>('AM');
-  const [endTime, setEndTime] = useState('');
+  const [endTime, setEndTime] = useState('10.39');
   const [endAmPm, setEndAmPm] = useState<AmPm>('AM');
-  const [hourlyRate, setHourlyRate] = useState('');
+  const [hourlyRate, setHourlyRate] = useState('3000');
   const [timeResult, setTimeResult] = useState<{hoursStr: string, amount: string, totalMin: number} | null>(null);
   const [samayBills, setSamayBills] = useState<SamayBill[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,69 +62,25 @@ export default function App() {
     return () => { clearInterval(interval); clearTimeout(timer); };
   }, []);
 
-  // LOAD bills from storage
-  useEffect(() => {
-    (async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if(saved){
-          const parsed = JSON.parse(saved);
-          if(Array.isArray(parsed)) setSamayBills(parsed);
-        }
-      } catch(e){ console.log('load error', e); }
-    })();
-  }, []);
-
-  // SAVE bills to storage whenever changed
-  useEffect(() => {
-    (async () => {
-      try {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(samayBills));
-      } catch(e){ console.log('save error', e); }
-    })();
-  }, [samayBills]);
-
   const handleCalculateAndSave = () => {
-    const sTime = startTime || '8.39';
-    const eTime = endTime || '10.39';
-    const rate = hourlyRate || '3000';
-    const s=parseTimeToMinutes(sTime,startAmPm);
-    const e=parseTimeToMinutes(eTime,endAmPm);
-    const r=parseFloat(rate);
-    if(s===null||e===null){Alert.alert('समय सही लिखें - जैसे 8.39'); return;}
+    const s=parseTimeToMinutes(startTime,startAmPm);
+    const e=parseTimeToMinutes(endTime,endAmPm);
+    const r=parseFloat(hourlyRate);
+    if(s===null||e===null){Alert.alert('समय सही लिखें'); return;}
     if(isNaN(r)){Alert.alert('Rate लिखें'); return;}
-    const finalName = kisanName.trim() || 'टार्जन कतलाम';
-    if(!finalName){Alert.alert('नाम लिखें'); return;}
+    if(!kisanName.trim()){Alert.alert('नाम लिखें'); return;}
     let d=e-s; if(d<0) d+=24*60;
     const h=Math.floor(d/60); const m=d%60; const dec=d/60;
     const hoursStr = `${h} घंटा ${String(m).padStart(2,'0')} मिनट`;
     const amount = `${(dec*r).toFixed(0)}`;
     setTimeResult({hoursStr, amount: `₹${amount}`, totalMin: d});
-
-    const finalBill: SamayBill = {
-      id: editingId || Date.now().toString(),
-      kisanName: finalName,
-      pata: kisanPata.trim() || 'पिपरौद',
-      mobile: kisanMobile.trim() || '9479025929',
-      dinank: kisanDinank.trim() || '14.05.1989',
-      startTime: sTime, startAmPm, endTime: eTime, endAmPm,
-      hourlyRate: rate,
-      totalHours: hoursStr,
-      totalAmount: amount,
-      totalMinutes: d
-    };
-
     if(editingId){
-      setSamayBills(prev => prev.map(b => b.id===editingId? finalBill : b));
-      setEditingId(null);
-      Alert.alert('✅ अपडेट हो गया');
+      setSamayBills(prev => prev.map(b => b.id===editingId? {...b, kisanName: kisanName.trim(), pata: kisanPata.trim(), mobile: kisanMobile.trim(), dinank: kisanDinank.trim(), startTime, startAmPm, endTime, endAmPm, hourlyRate, totalHours: hoursStr, totalAmount: amount, totalMinutes: d} : b));
+      setEditingId(null); Alert.alert('✅ अपडेट हो गया');
     } else {
-      setSamayBills(prev => [finalBill,...prev]);
-      Alert.alert('✅ सेव हो गया', `${finalBill.kisanName} - ₹${amount} सेव हो गया, अब बंद करने पर भी रहेगा`);
+      const newBill: SamayBill = { id: Date.now().toString(), kisanName: kisanName.trim(), pata: kisanPata.trim(), mobile: kisanMobile.trim(), dinank: kisanDinank.trim(), startTime, startAmPm, endTime, endAmPm, hourlyRate, totalHours: hoursStr, totalAmount: amount, totalMinutes: d };
+      setSamayBills(prev => [newBill,...prev]); Alert.alert('✅ सेव हो गया');
     }
-    // clear for next entry but keep placeholders
-    setKisanName(''); setKisanPata(''); setKisanMobile(''); setKisanDinank('');
-    setStartTime(''); setEndTime(''); setHourlyRate('');
   };
 
   const handleEdit = (bill: SamayBill) => {
@@ -168,41 +121,26 @@ export default function App() {
 
   const renderSamayScreen = () => (
     <ScrollView contentContainerStyle={{ padding: 15, paddingBottom: 120 }}>
-      {timeResult && (
-        <>
-          <View style={[styles.resultCardFixed, { backgroundColor: '#EDE7F6' }]}>
-            <Text style={styles.resultLabelFixed}>टोटल समय</Text>
-            <Text style={styles.resultValueFixed}>{timeResult.hoursStr}</Text>
-          </View>
-          <View style={[styles.resultCardFixed, { backgroundColor: '#FFF9C4', marginTop: 10 }]}>
-            <Text style={styles.resultLabelFixed}>कुल किराया</Text>
-            <Text style={[styles.resultValueFixed, { fontSize: 20 }]}>{timeResult.amount}</Text>
-          </View>
-        </>
-      )}
+      {timeResult && (<><View style={[styles.resultCard, { backgroundColor: '#EDE7F6' }]}><Text style={styles.resultLabel}>टोटल</Text><Text style={styles.resultValue}>{timeResult.hoursStr}</Text></View><View style={[styles.resultCard, { backgroundColor: '#FFF9C4', marginTop: 10 }]}><Text style={styles.resultLabel}>कुल</Text><Text style={[styles.resultValue, { fontSize: 20 }]}>{timeResult.amount}</Text></View></>)}
       <View style={[styles.card, { marginTop: 15 }]}>
         <Text style={styles.sectionTitle}>👨‍🌾 किसान की जानकारी</Text>
-        <Text style={styles.timeLabel}>किसान का नाम</Text>
-        <TextInput style={styles.input} value={kisanName} onChangeText={setKisanName} placeholder="टार्जन कतलाम" placeholderTextColor="#aaa" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>पता</Text>
-        <TextInput style={styles.input} value={kisanPata} onChangeText={setKisanPata} placeholder="पिपरौद" placeholderTextColor="#aaa" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>मोबाइल</Text>
-        <TextInput style={styles.input} value={kisanMobile} onChangeText={setKisanMobile} placeholder="9479025929" placeholderTextColor="#aaa" keyboardType="phone-pad" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>दिनांक</Text>
-        <TextInput style={styles.input} value={kisanDinank} onChangeText={setKisanDinank} placeholder="14.05.1989" placeholderTextColor="#aaa" />
+        <Text style={styles.timeLabel}>किसान का नाम</Text><TextInput style={styles.input} value={kisanName} onChangeText={setKisanName} placeholder="नाम" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>पता</Text><TextInput style={styles.input} value={kisanPata} onChangeText={setKisanPata} placeholder="पता" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>मोबाइल</Text><TextInput style={styles.input} value={kisanMobile} onChangeText={setKisanMobile} placeholder="मोबाइल" keyboardType="phone-pad" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>दिनांक</Text><TextInput style={styles.input} value={kisanDinank} onChangeText={setKisanDinank} placeholder="12.10.2026" />
         <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 18 }} />
         <Text style={styles.sectionTitle}>⏰ समय</Text>
-        <Text style={styles.timeLabel}>Start time</Text><View style={styles.timeBox}><TextInput style={styles.timeInput} value={startTime} onChangeText={setStartTime} placeholder="8.39" placeholderTextColor="#aaa" keyboardType="numeric" /><View style={styles.ampmContainer}><TouchableOpacity style={[styles.ampmBtn, startAmPm==='AM' && styles.ampmActive]} onPress={()=>setStartAmPm('AM')}><Text style={[styles.ampmText, startAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity><TouchableOpacity style={[styles.ampmBtn, startAmPm==='PM' && styles.ampmActive]} onPress={()=>setStartAmPm('PM')}><Text style={[styles.ampmText, startAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity></View></View>
-        <Text style={[styles.timeLabel, {marginTop: 15}]}>End time</Text><View style={styles.timeBox}><TextInput style={styles.timeInput} value={endTime} onChangeText={setEndTime} placeholder="10.39" placeholderTextColor="#aaa" keyboardType="numeric" /><View style={styles.ampmContainer}><TouchableOpacity style={[styles.ampmBtn, endAmPm==='AM' && styles.ampmActive]} onPress={()=>setEndAmPm('AM')}><Text style={[styles.ampmText, endAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity><TouchableOpacity style={[styles.ampmBtn, endAmPm==='PM' && styles.ampmActive]} onPress={()=>setEndAmPm('PM')}><Text style={[styles.ampmText, endAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity></View></View>
-        <Text style={[styles.timeLabel, { marginTop: 15 }]}>Hourly rate (₹ / घंटा)</Text><TextInput style={styles.input} value={hourlyRate} onChangeText={setHourlyRate} placeholder="3000" placeholderTextColor="#aaa" keyboardType="numeric" />
-        <TouchableOpacity style={[styles.blueButton, { backgroundColor: editingId? '#FF9800' : '#2E9D5A', marginTop: 20 }]} onPress={handleCalculateAndSave}><Text style={styles.blueButtonText}>{editingId? '✏️ अपडेट करें' : 'हिसाब लगाएं + सेव करें'}</Text></TouchableOpacity>
-        <TouchableOpacity style={[styles.blueButton, { backgroundColor: '#607D8B', marginTop: 12 }]} onPress={()=>setCalcScreen('samay_list')}><Text style={styles.blueButtonText}>📋 लिस्ट देखें ({samayBills.length}) - परमानेंट सेव</Text></TouchableOpacity>
+        <Text style={styles.timeLabel}>Start time</Text><View style={styles.timeBox}><TextInput style={styles.timeInput} value={startTime} onChangeText={setStartTime} placeholder="8.39" keyboardType="numeric" /><View style={styles.ampmContainer}><TouchableOpacity style={[styles.ampmBtn, startAmPm==='AM' && styles.ampmActive]} onPress={()=>setStartAmPm('AM')}><Text style={[styles.ampmText, startAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity><TouchableOpacity style={[styles.ampmBtn, startAmPm==='PM' && styles.ampmActive]} onPress={()=>setStartAmPm('PM')}><Text style={[styles.ampmText, startAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity></View></View>
+        <Text style={[styles.timeLabel, {marginTop: 15}]}>End time</Text><View style={styles.timeBox}><TextInput style={styles.timeInput} value={endTime} onChangeText={setEndTime} placeholder="10.39" keyboardType="numeric" /><View style={styles.ampmContainer}><TouchableOpacity style={[styles.ampmBtn, endAmPm==='AM' && styles.ampmActive]} onPress={()=>setEndAmPm('AM')}><Text style={[styles.ampmText, endAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity><TouchableOpacity style={[styles.ampmBtn, endAmPm==='PM' && styles.ampmActive]} onPress={()=>setEndAmPm('PM')}><Text style={[styles.ampmText, endAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity></View></View>
+        <Text style={[styles.timeLabel, { marginTop: 15 }]}>Hourly rate</Text><TextInput style={styles.input} value={hourlyRate} onChangeText={setHourlyRate} keyboardType="numeric" placeholder="3000" />
+        <TouchableOpacity style={[styles.blueButton, { backgroundColor: editingId? '#FF9800' : '#2E9D5A', marginTop: 20 }]} onPress={handleCalculateAndSave}><Text style={styles.blueButtonText}>{editingId? '✏️ अपडेट' : 'हिसाब लगाएं'}</Text></TouchableOpacity>
+        <TouchableOpacity style={[styles.blueButton, { backgroundColor: '#FF9800', marginTop: 12 }]} onPress={()=>setCalcScreen('samay_list')}><Text style={styles.blueButtonText}>📋 लिस्ट ({samayBills.length})</Text></TouchableOpacity>
       </View>
     </ScrollView>
   );
 
   const renderSamayListScreen = () => (
-    <View style={{ flex: 1, padding: 12 }}><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{samayBills.length===0? <View style={{ alignItems: 'center', marginTop: 100 }}><Text style={{ color: '#999' }}>कोई बिल नहीं - सेव करने पर यहाँ रहेगा, App बंद करने पर भी नहीं कटेगा</Text></View> : samayBills.map(bill => (<View key={bill.id} style={styles.billCard}><View style={styles.billHeaderRow}><Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text><Text style={styles.billDate}>{bill.dinank}</Text></View><Text style={styles.billSub}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text><View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} /><View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View><View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View></View>))}</ScrollView></View>
+    <View style={{ flex: 1, padding: 12 }}><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{samayBills.length===0? <View style={{ alignItems: 'center', marginTop: 100 }}><Text style={{ color: '#999' }}>कोई बिल नहीं</Text></View> : samayBills.map(bill => (<View key={bill.id} style={styles.billCard}><View style={styles.billHeaderRow}><Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text><Text style={styles.billDate}>{bill.dinank}</Text></View><Text style={styles.billSub}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text><View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} /><View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View><View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View></View>))}</ScrollView></View>
   );
 
   return (
@@ -214,7 +152,7 @@ export default function App() {
         {activeTab === 'order' && <View style={styles.otherContainer}><Text style={styles.otherTitle}>ऑर्डर</Text></View>}
       </View>
       <View style={styles.bottomBar}>{NAV_TABS.map(tab => (<TouchableOpacity key={tab.id} style={styles.tab} onPress={() => setActiveTab(tab.key)}><Text style={[styles.tabIcon, activeTab === tab.key && styles.activeTab]}>{tab.icon}</Text><Text style={[styles.tabText, activeTab === tab.key && styles.activeTab]}>{tab.name}</Text></TouchableOpacity>))}</View>
-      <Modal visible={showCalculator} animationType="slide"><View style={styles.calcPage}><View style={styles.calcPageHeader}><TouchableOpacity onPress={() => { if(calcScreen === 'main') setShowCalculator(false); else if(calcScreen === 'samay_list') setCalcScreen('samay'); else setCalcScreen('main'); }}><Text style={styles.backText}>{calcScreen === 'main'? '✕ बंद' : '← वापस'}</Text></TouchableOpacity><Text style={styles.calcPageTitle}>{calcScreen === 'samay_list'? '📋 बिल लिस्ट' : CALCULATOR_DATA.header}</Text><View style={{ width: 50 }} /></View>{calcScreen === 'main' && (<View style={{ padding: 15, paddingTop: 20 }}>{CALCULATOR_DATA.menu.map((item) => (<TouchableOpacity key={item.id} style={[styles.bigCalcBtn, { backgroundColor: item.color }]} onPress={() => setCalcScreen(item.id as CalcScreen)}><Text style={styles.bigCalcIcon}>{item.icon} {item.name}</Text><Text style={styles.bigCalcSub}>{item.sub}</Text></TouchableOpacity>))}</View>)}{calcScreen === 'samay' && renderSamayScreen()}{calcScreen === 'samay_list' && renderSamayListScreen()}{calcScreen === 'umr' && (<ScrollView contentContainerStyle={{ padding: 20 }}><Text style={styles.normalTitle}>{CALCULATOR_DATA.screens.umr.title}</Text><View style={styles.card}><Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.umr.dobLabel}</Text><TextInput style={styles.input} value={dobStr} onChangeText={setDobStr} placeholder={CALCULATOR_DATA.screens.umr.dobPlaceholder} keyboardType="numeric" /><Text style={[styles.timeLabel, {marginTop: 15}]}>{CALCULATOR_DATA.screens.umr.todayLabel}</Text><TextInput style={styles.input} value={todayStr} onChangeText={setTodayStr} placeholder={CALCULATOR_DATA.screens.umr.todayPlaceholder} keyboardType="numeric" /><TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.umr.color, marginTop: 20 }]} onPress={()=>{ const dob=parseDateDMY(dobStr); const today=parseDateDMY(todayStr); if(!dob||!today){Alert.alert('तारीख सही'); return;} let y=today.getFullYear()-dob.getFullYear(); let mo=today.getMonth()-dob.getMonth(); let da=today.getDate()-dob.getDate(); if(da<0){mo--; const pm=new Date(today.getFullYear(),today.getMonth(),0); da+=pm.getDate();} if(mo<0){y--; mo+=12;} setAgeResult(`${y} साल ${mo} महीना ${da} दिन`); }}><Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.umr.buttonText}</Text></TouchableOpacity>{ageResult? (<View style={[styles.resultCardFixed, { backgroundColor: '#E6E6FA', marginTop: 20 }]}><Text style={styles.resultLabelFixed}>उम्र</Text><Text style={styles.resultValueFixed}>{ageResult}</Text></View>):null}</View></ScrollView>)}</View></Modal>
+      <Modal visible={showCalculator} animationType="slide"><View style={styles.calcPage}><View style={styles.calcPageHeader}><TouchableOpacity onPress={() => { if(calcScreen === 'main') setShowCalculator(false); else if(calcScreen === 'samay_list') setCalcScreen('samay'); else setCalcScreen('main'); }}><Text style={styles.backText}>{calcScreen === 'main'? '✕ बंद' : '← वापस'}</Text></TouchableOpacity><Text style={styles.calcPageTitle}>{calcScreen === 'samay_list'? '📋 बिल लिस्ट' : CALCULATOR_DATA.header}</Text><View style={{ width: 50 }} /></View>{calcScreen === 'main' && (<View style={{ padding: 15, paddingTop: 20 }}>{CALCULATOR_DATA.menu.map((item) => (<TouchableOpacity key={item.id} style={[styles.bigCalcBtn, { backgroundColor: item.color }]} onPress={() => setCalcScreen(item.id as CalcScreen)}><Text style={styles.bigCalcIcon}>{item.icon} {item.name}</Text><Text style={styles.bigCalcSub}>{item.sub}</Text></TouchableOpacity>))}</View>)}{calcScreen === 'samay' && renderSamayScreen()}{calcScreen === 'samay_list' && renderSamayListScreen()}{calcScreen === 'umr' && (<ScrollView contentContainerStyle={{ padding: 20 }}><Text style={styles.normalTitle}>{CALCULATOR_DATA.screens.umr.title}</Text><View style={styles.card}><Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.umr.dobLabel}</Text><TextInput style={styles.input} value={dobStr} onChangeText={setDobStr} placeholder={CALCULATOR_DATA.screens.umr.dobPlaceholder} keyboardType="numeric" /><Text style={[styles.timeLabel, {marginTop: 15}]}>{CALCULATOR_DATA.screens.umr.todayLabel}</Text><TextInput style={styles.input} value={todayStr} onChangeText={setTodayStr} placeholder={CALCULATOR_DATA.screens.umr.todayPlaceholder} keyboardType="numeric" /><TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.umr.color, marginTop: 20 }]} onPress={()=>{ const dob=parseDateDMY(dobStr); const today=parseDateDMY(todayStr); if(!dob||!today){Alert.alert('तारीख सही'); return;} let y=today.getFullYear()-dob.getFullYear(); let mo=today.getMonth()-dob.getMonth(); let da=today.getDate()-dob.getDate(); if(da<0){mo--; const pm=new Date(today.getFullYear(),today.getMonth(),0); da+=pm.getDate();} if(mo<0){y--; mo+=12;} setAgeResult(`${y} साल ${mo} महीना ${da} दिन`); }}><Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.umr.buttonText}</Text></TouchableOpacity>{ageResult? (<View style={[styles.resultCard, { backgroundColor: '#E6E6FA', marginTop: 20 }]}><Text style={styles.resultLabel}>उम्र</Text><Text style={styles.resultValue}>{ageResult}</Text></View>):null}</View></ScrollView>)}</View></Modal>
     </View>
   );
 }
@@ -256,10 +194,9 @@ const styles = StyleSheet.create({
   bigCalcBtn: { borderRadius: 18, padding: 25, alignItems: 'center', marginBottom: 20, elevation: 3 },
   bigCalcIcon: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   bigCalcSub: { fontSize: 15, color: '#fff', marginTop: 6 },
-  // FIXED RESULT CARD - no more cut text
-  resultCardFixed: { borderRadius: 12, padding: 15, minHeight: 50 },
-  resultLabelFixed: { fontSize: 16, color: '#333', fontWeight: '600', flex: 1 },
-  resultValueFixed: { fontSize: 16, fontWeight: 'bold', color: '#000', textAlign: 'right' },
+  resultCard: { borderRadius: 12, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  resultLabel: { fontSize: 14, color: '#555' },
+  resultValue: { fontSize: 16, fontWeight: 'bold', color: '#000' },
   timeLabel: { fontSize: 14, color: '#555', marginBottom: 5 },
   timeBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 10 },
   timeInput: { flex: 1, paddingVertical: 12, fontSize: 16 },

@@ -37,11 +37,19 @@ export const CALCULATOR_DATA = {
     samay: {
       title: '⏰ समय और किराया बिल',
       nameLabel: 'किसान का नाम',
+<<<<<<< HEAD
       namePlaceholder: 'जैसे - टार्जन ',
       pataLabel: 'पता / गांव',
       pataPlaceholder: 'जैसे - लखनपुरी , कांकेर',
       mobileLabel: 'मोबाइल नंबर',
       mobilePlaceholder: 'जैसे - 9479025929',
+=======
+      namePlaceholder: 'जैसे - राकेश साहू',
+      pataLabel: 'पता / गांव',
+      pataPlaceholder: 'जैसे - रहरपुर, कांकेर',
+      mobileLabel: 'मोबाइल नंबर',
+      mobilePlaceholder: 'जैसे - 9876543210',
+>>>>>>> b6e6033a04ff615e2c7f27762d77419b64adc8a5
       dinankLabel: 'दिनांक',
       dinankPlaceholder: '8.10.2026',
       startLabel: 'Start time',
