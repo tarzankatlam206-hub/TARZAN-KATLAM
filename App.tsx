@@ -38,10 +38,10 @@ export default function App() {
   const [newPassword, setNewPassword] = useState('');
   const [showCalculator, setShowCalculator] = useState(false);
   const [calcScreen, setCalcScreen] = useState<CalcScreen>('main');
-  const [kisanName, setKisanName] = useState('');
-  const [kisanPata, setKisanPata] = useState('');
-  const [kisanMobile, setKisanMobile] = useState('');
-  const [kisanDinank, setKisanDinank] = useState('12.10.2026');
+  const [kisanName, setKisanName] = useState('टार्जन कतलाम');
+  const [kisanPata, setKisanPata] = useState('पिपरौद');
+  const [kisanMobile, setKisanMobile] = useState('9479025929');
+  const [kisanDinank, setKisanDinank] = useState('14.05.1989');
   const [startTime, setStartTime] = useState('8.39');
   const [startAmPm, setStartAmPm] = useState<AmPm>('AM');
   const [endTime, setEndTime] = useState('10.39');
@@ -96,12 +96,12 @@ export default function App() {
   };
 
   const shareBill = async (bill: SamayBill) => {
-    const msg = `🚜 TARZAN KATLAM\nकिसान: ${bill.kisanName}\nपता: ${bill.pata}\nमोबाइल: ${bill.mobile}\nदिनांक: ${bill.dinank}\nStart: ${bill.startTime} ${bill.startAmPm}\nEnd: ${bill.endTime} ${bill.endAmPm}\nटोटल: ${bill.totalHours}\nकुल: ₹${bill.totalAmount}`;
+    const msg = `🚜 *TARZAN KATLAM - हार्वेस्टर बिल*\n\n👨‍🌾 किसान: ${bill.kisanName}\n📍 पता: ${bill.pata}\n📱 मोबाइल: ${bill.mobile}\n📅 दिनांक: ${bill.dinank}\n\n⏰ Start: ${bill.startTime} ${bill.startAmPm}\n⏰ End: ${bill.endTime} ${bill.endAmPm}\n⏳ टोटल: ${bill.totalHours}\n💰 दर: ₹${bill.hourlyRate}/घंटा\n💵 *कुल किराया: ₹${bill.totalAmount}*\n\nधन्यवाद! 🙏`;
     try{ await Share.share({message: msg}); } catch(e){ Alert.alert('बिल', msg); }
   };
 
   const sharePDF = async (bill: SamayBill) => {
-    const pdfText = `TARZAN KATLAM - BILL\n\nकिसान: ${bill.kisanName}\nपता: ${bill.pata}\nमोबाइल: ${bill.mobile}\nदिनांक: ${bill.dinank}\nStart: ${bill.startTime} ${bill.startAmPm}\nEnd: ${bill.endTime} ${bill.endAmPm}\nटोटल: ${bill.totalHours}\nकुल: ₹${bill.totalAmount}`;
+    const pdfText = `🚜 *TARZAN KATLAM - हार्वेस्टर बिल*\n\n👨‍🌾 किसान: ${bill.kisanName}\n📍 पता: ${bill.pata}\n📱 मोबाइल: ${bill.mobile}\n📅 दिनांक: ${bill.dinank}\n\n⏰ Start: ${bill.startTime} ${bill.startAmPm}\n⏰ End: ${bill.endTime} ${bill.endAmPm}\n⏳ टोटल: ${bill.totalHours}\n💰 दर: ₹${bill.hourlyRate}/घंटा\n💵 *कुल किराया: ₹${bill.totalAmount}*\n\nधन्यवाद! 🙏`;
     try{ await Share.share({message: pdfText}); } catch(e){ Alert.alert('PDF बिल', pdfText); }
   };
 
@@ -121,13 +121,13 @@ export default function App() {
 
   const renderSamayScreen = () => (
     <ScrollView contentContainerStyle={{ padding: 15, paddingBottom: 120 }}>
-      {timeResult && (<><View style={[styles.resultCard, { backgroundColor: '#EDE7F6' }]}><Text style={styles.resultLabel}>टोटल</Text><Text style={styles.resultValue}>{timeResult.hoursStr}</Text></View><View style={[styles.resultCard, { backgroundColor: '#FFF9C4', marginTop: 10 }]}><Text style={styles.resultLabel}>कुल</Text><Text style={[styles.resultValue, { fontSize: 20 }]}>{timeResult.amount}</Text></View></>)}
+      {timeResult && (<><View style={[styles.resultCard, { backgroundColor: '#EDE7F6' }]}><Text style={styles.resultLabelFull}>⏳ टोटल समय</Text><Text style={styles.resultValue}>{timeResult.hoursStr}</Text></View><View style={[styles.resultCard, { backgroundColor: '#FFF9C4', marginTop: 10 }]}><Text style={styles.resultLabelFull}>💰 कुल किराया</Text><Text style={[styles.resultValue, { fontSize: 20 }]}>{timeResult.amount}</Text></View></>)}
       <View style={[styles.card, { marginTop: 15 }]}>
         <Text style={styles.sectionTitle}>👨‍🌾 किसान की जानकारी</Text>
-        <Text style={styles.timeLabel}>किसान का नाम</Text><TextInput style={styles.input} value={kisanName} onChangeText={setKisanName} placeholder="नाम" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>पता</Text><TextInput style={styles.input} value={kisanPata} onChangeText={setKisanPata} placeholder="पता" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>मोबाइल</Text><TextInput style={styles.input} value={kisanMobile} onChangeText={setKisanMobile} placeholder="मोबाइल" keyboardType="phone-pad" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>दिनांक</Text><TextInput style={styles.input} value={kisanDinank} onChangeText={setKisanDinank} placeholder="12.10.2026" />
+        <Text style={styles.timeLabel}>किसान का नाम</Text><TextInput style={[styles.input, kisanName==='टार्जन कतलाम' && {color: '#777'}]} value={kisanName} onChangeText={(t)=>setKisanName(t)} placeholder="नाम" placeholderTextColor="#AAA" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>पता</Text><TextInput style={[styles.input, kisanPata==='पिपरौद' && {color: '#777'}]} value={kisanPata} onChangeText={(t)=>setKisanPata(t)} placeholder="पता" placeholderTextColor="#AAA" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>मोबाइल</Text><TextInput style={[styles.input, kisanMobile==='9479025929' && {color: '#777'}]} value={kisanMobile} onChangeText={(t)=>setKisanMobile(t)} placeholder="मोबाइल" keyboardType="phone-pad" placeholderTextColor="#AAA" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>दिनांक</Text><TextInput style={[styles.input, kisanDinank==='14.05.1989' && {color: '#777'}]} value={kisanDinank} onChangeText={(t)=>setKisanDinank(t)} placeholder="14.05.1989" placeholderTextColor="#AAA" />
         <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 18 }} />
         <Text style={styles.sectionTitle}>⏰ समय</Text>
         <Text style={styles.timeLabel}>Start time</Text><View style={styles.timeBox}><TextInput style={styles.timeInput} value={startTime} onChangeText={setStartTime} placeholder="8.39" keyboardType="numeric" /><View style={styles.ampmContainer}><TouchableOpacity style={[styles.ampmBtn, startAmPm==='AM' && styles.ampmActive]} onPress={()=>setStartAmPm('AM')}><Text style={[styles.ampmText, startAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity><TouchableOpacity style={[styles.ampmBtn, startAmPm==='PM' && styles.ampmActive]} onPress={()=>setStartAmPm('PM')}><Text style={[styles.ampmText, startAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity></View></View>
@@ -194,9 +194,10 @@ const styles = StyleSheet.create({
   bigCalcBtn: { borderRadius: 18, padding: 25, alignItems: 'center', marginBottom: 20, elevation: 3 },
   bigCalcIcon: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   bigCalcSub: { fontSize: 15, color: '#fff', marginTop: 6 },
-  resultCard: { borderRadius: 12, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  resultCard: { borderRadius: 12, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 55 },
   resultLabel: { fontSize: 14, color: '#555' },
-  resultValue: { fontSize: 16, fontWeight: 'bold', color: '#000' },
+  resultLabelFull: { fontSize: 15, color: '#333', fontWeight: '600', flex: 1 },
+  resultValue: { fontSize: 16, fontWeight: 'bold', color: '#000', flexShrink: 0, marginLeft: 10 },
   timeLabel: { fontSize: 14, color: '#555', marginBottom: 5 },
   timeBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, backgroundColor: '#fff', paddingHorizontal: 10 },
   timeInput: { flex: 1, paddingVertical: 12, fontSize: 16 },
