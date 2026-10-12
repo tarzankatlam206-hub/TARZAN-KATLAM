@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, TextInput, Modal, Share } from 'react-native';
+import { View, Image, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, TextInput, Modal, Share, BackHandler } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HOME_BUTTONS, NAV_TABS, SETTING_DATA, CALCULATOR_DATA, KHARCH_DATA } from './master_data';
 
 type TabKey = 'home' | 'kharch' | 'order' | 'setting';
@@ -61,6 +62,44 @@ export default function App() {
     const timer = setTimeout(() => setShowSplash(false), 3000);
     return () => { clearInterval(interval); clearTimeout(timer); };
   }, []);
+
+  // --- LOAD SAVED DATA ---
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedBills = await AsyncStorage.getItem('SAMAY_BILLS');
+        if (savedBills) setSamayBills(JSON.parse(savedBills));
+        const savedKharch = await AsyncStorage.getItem('KHARCH_ENTRIES');
+        if (savedKharch) setKharchEntries(JSON.parse(savedKharch));
+      } catch (e) { console.log('load error', e); }
+    })();
+  }, []);
+
+  // --- SAVE BILLS ---
+  useEffect(() => {
+    AsyncStorage.setItem('SAMAY_BILLS', JSON.stringify(samayBills)).catch(()=>{});
+  }, [samayBills]);
+
+  useEffect(() => {
+    AsyncStorage.setItem('KHARCH_ENTRIES', JSON.stringify(kharchEntries)).catch(()=>{});
+  }, [kharchEntries]);
+
+  // --- ANDROID BACK BUTTON ---
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showKharchForm) { setShowKharchForm(false); return true; }
+      if (kharchPage) { setKharchPage(null); return true; }
+      if (showCalculator) {
+        if (calcScreen === 'samay_list') { setCalcScreen('samay'); return true; }
+        if (calcScreen !== 'main') { setCalcScreen('main'); return true; }
+        setShowCalculator(false); return true;
+      }
+      if (activeTab !== 'home') { setActiveTab('home'); return true; }
+      return false; // allow exit
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [showCalculator, calcScreen, kharchPage, showKharchForm, activeTab]);
 
   const handleCalculateAndSave = () => {
     const s=parseTimeToMinutes(startTime,startAmPm);
