@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, TextInput, Modal, Share, BackHandler } from 'react-native';
+import { View, Image, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, TextInput, Modal, Share, BackHandler, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -29,75 +29,30 @@ function parseDateDMY(str: string): Date | null {
   const date = new Date(y, m-1, d); if (date.getDate()!==d || date.getMonth()!==m-1 || date.getFullYear()!==y) return null; return date;
 }
 
+interface OrderItem {
+  id: string; name: string; pata: string; block: string; jila: string; rajya: string;
+  mobile: string; karya: string; trolly: string; dinank: string; samay: string; ekad: string;
+}
 interface SamayBill {
   id: string; kisanName: string; pata: string; mobile: string; karya: string; dinank: string;
   startTime: string; startAmPm: AmPm; endTime: string; endAmPm: AmPm;
   hourlyRate: string; totalHours: string; totalAmount: string; totalMinutes: number;
 }
-
-// --- PDF HTML TEMPLATE WITH KARYA ---
 function getBillHtml(bill: SamayBill): string {
-  return `
-  <html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body { font-family: Helvetica, Arial, sans-serif; padding: 24px; color: #222; }
-      .header { text-align: center; border-bottom: 3px solid #2E9D5A; padding-bottom: 15px; margin-bottom: 20px; }
-      .header h1 { margin: 0; font-size: 28px; color: #2E9D5A; letter-spacing: 1px; }
-      .header p { margin: 4px 0 0 0; font-size: 14px; color: #555; }
-      .section { background: #F9F9F9; border-radius: 10px; padding: 15px 18px; margin-bottom: 15px; }
-      .section h3 { margin: 0 0 10px 0; color: #2E9D5A; font-size: 16px; }
-      .row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px; }
-      .row span:first-child { color: #666; }
-      .row span:last-child { font-weight: bold; }
-      .karya-box { background: #FFF8E1; border: 1px solid #FFD54F; border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
-      .karya-label { font-size: 12px; color: #8D6E63; }
-      .karya-value { font-size: 15px; font-weight: bold; color: #000; margin-top: 3px; }
-      .highlight { background: #E8F5E9; border: 2px dashed #2E9D5A; border-radius: 12px; padding: 15px; text-align: center; margin-top: 20px; }
-      .highlight .time { font-size: 16px; font-weight: bold; }
-      .highlight .amount { font-size: 26px; font-weight: 900; color: #B71C1C; margin-top: 8px; }
-      .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 12px; }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h1>🚜 TARZAN KATLAM</h1>
-      <p>हार्वेस्टर सेवा - प्रोफेशनल बिल</p>
-      <p>मो. 9479025929 | पिपरौद</p>
-    </div>
-
-    <div class="section">
-      <h3>👨‍🌾 किसान की जानकारी</h3>
-      <div class="row"><span>नाम:</span><span>${bill.kisanName}</span></div>
-      <div class="row"><span>पता / गांव:</span><span>${bill.pata}</span></div>
-      <div class="row"><span>मोबाइल:</span><span>${bill.mobile}</span></div>
-      <div class="karya-box">
-        <div class="karya-label">कार्य:</div>
-        <div class="karya-value">${bill.karya || '-'}</div>
-      </div>
-      <div class="row" style="margin-top:10px"><span>दिनांक:</span><span>${bill.dinank}</span></div>
-    </div>
-
-    <div class="section">
-      <h3>⏰ समय का विवरण</h3>
-      <div class="row"><span>Start Time:</span><span>${bill.startTime} ${bill.startAmPm}</span></div>
-      <div class="row"><span>End Time:</span><span>${bill.endTime} ${bill.endAmPm}</span></div>
-      <div class="row"><span>दर (प्रति घंटा):</span><span>₹ ${bill.hourlyRate}</span></div>
-    </div>
-
-    <div class="highlight">
-      <div class="time">कुल समय: ${bill.totalHours}</div>
-      <div class="amount">कुल राशि: ₹ ${bill.totalAmount}</div>
-    </div>
-
-    <div class="footer">
-      <p>धन्यवाद! 🙏 फिर से सेवा का मौका दें</p>
-      <p>यह बिल कंप्यूटर द्वारा बनाया गया है</p>
-    </div>
-  </body>
-  </html>
-  `;
+  return `<html><head><meta charset="utf-8" /><style>
+ body { font-family: Helvetica, Arial, sans-serif; padding: 24px; color: #222; }
+.header { text-align: center; border-bottom: 3px solid #2E9D5A; padding-bottom: 15px; margin-bottom: 20px; }
+.section { background: #F9F9F9; border-radius: 10px; padding: 15px 18px; margin-bottom: 15px; }
+.row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px; }
+.karya-box { background: #FFF8E1; border: 1px solid #FFD54F; border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
+.highlight { background: #E8F5E9; border: 2px dashed #2E9D5A; border-radius: 12px; padding: 15px; text-align: center; margin-top: 20px; }
+.amount { font-size: 26px; font-weight: 900; color: #B71C1C; margin-top: 8px; }
+ </style></head><body>
+ <div class="header"><h1>🚜 TARZAN KATLAM</h1><p>हार्वेस्टर सेवा - प्रोफेशनल बिल</p><p>मो. 9479025929 | पिपरौद</p></div>
+ <div class="section"><div class="row"><span>नाम:</span><span>${bill.kisanName}</span></div><div class="row"><span>पता:</span><span>${bill.pata}</span></div><div class="row"><span>मोबाइल:</span><span>${bill.mobile}</span></div><div class="karya-box">कार्य: ${bill.karya || '-'}</div><div class="row"><span>दिनांक:</span><span>${bill.dinank}</span></div></div>
+ <div class="section"><div class="row"><span>Start:</span><span>${bill.startTime} ${bill.startAmPm}</span></div><div class="row"><span>End:</span><span>${bill.endTime} ${bill.endAmPm}</span></div><div class="row"><span>दर:</span><span>₹ ${bill.hourlyRate}</span></div></div>
+ <div class="highlight"><div>कुल समय: ${bill.totalHours}</div><div class="amount">कुल राशि: ₹ ${bill.totalAmount}</div></div>
+ </body></html>`;
 }
 
 export default function App() {
@@ -119,6 +74,11 @@ export default function App() {
   const [timeResult, setTimeResult] = useState<{hoursStr: string, amount: string, totalMin: number} | null>(null);
   const [samayBills, setSamayBills] = useState<SamayBill[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
+  const [searchOrder, setSearchOrder] = useState('');
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [orderForm, setOrderForm] = useState({ name:'', pata:'', block:'', jila:'', rajya:'छत्तीसगढ़', mobile:'', karya:'', trolly:'लगाना है', dinank:'', samay:'', ekad:'' });
   const [dobStr, setDobStr] = useState('14.5.1989'); const [todayStr, setTodayStr] = useState('8.10.2026'); const [ageResult, setAgeResult] = useState('');
   const [kharchPage, setKharchPage] = useState<string | null>(null);
   const [showKharchForm, setShowKharchForm] = useState(false);
@@ -130,46 +90,37 @@ export default function App() {
     const timer = setTimeout(() => setShowSplash(false), 3000);
     return () => { clearInterval(interval); clearTimeout(timer); };
   }, []);
-
   useEffect(() => {
     (async () => {
       try {
         const savedBills = await AsyncStorage.getItem('SAMAY_BILLS');
-        if (savedBills) {
-          const parsed = JSON.parse(savedBills);
-          // Migration: old bills without karya field
-          const migrated = parsed.map((b:any)=> ({...b, karya: b.karya || ''}));
-          setSamayBills(migrated);
-        }
+        if (savedBills) { const parsed = JSON.parse(savedBills); const migrated = parsed.map((b:any)=> ({...b, karya: b.karya || ''})); setSamayBills(migrated); }
         const savedKharch = await AsyncStorage.getItem('KHARCH_ENTRIES');
         if (savedKharch) setKharchEntries(JSON.parse(savedKharch));
+        const savedOrders = await AsyncStorage.getItem('ORDER_LIST');
+        if (savedOrders) setOrders(JSON.parse(savedOrders));
       } catch (e) { console.log('load error', e); }
     })();
   }, []);
-
-  useEffect(() => {
-    AsyncStorage.setItem('SAMAY_BILLS', JSON.stringify(samayBills)).catch(()=>{});
-  }, [samayBills]);
-
-  useEffect(() => {
-    AsyncStorage.setItem('KHARCH_ENTRIES', JSON.stringify(kharchEntries)).catch(()=>{});
-  }, [kharchEntries]);
-
+  useEffect(() => { AsyncStorage.setItem('SAMAY_BILLS', JSON.stringify(samayBills)).catch(()=>{}); }, [samayBills]);
+  useEffect(() => { AsyncStorage.setItem('KHARCH_ENTRIES', JSON.stringify(kharchEntries)).catch(()=>{}); }, [kharchEntries]);
+  useEffect(() => { AsyncStorage.setItem('ORDER_LIST', JSON.stringify(orders)).catch(()=>{}); }, [orders]);
   useEffect(() => {
     const onBackPress = () => {
+      if (showOrderForm) { setShowOrderForm(false); return true; }
       if (showKharchForm) { setShowKharchForm(false); return true; }
       if (kharchPage) { setKharchPage(null); return true; }
       if (showCalculator) {
         if (calcScreen === 'samay_list') { setCalcScreen('samay'); return true; }
-        if (calcScreen !== 'main') { setCalcScreen('main'); return true; }
+        if (calcScreen!== 'main') { setCalcScreen('main'); return true; }
         setShowCalculator(false); return true;
       }
-      if (activeTab !== 'home') { setActiveTab('home'); return true; }
+      if (activeTab!== 'home') { setActiveTab('home'); return true; }
       return false;
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
-  }, [showCalculator, calcScreen, kharchPage, showKharchForm, activeTab]);
+  }, [showCalculator, calcScreen, kharchPage, showKharchForm, activeTab, showOrderForm]);
 
   const handleCalculateAndSave = () => {
     const s=parseTimeToMinutes(startTime,startAmPm);
@@ -191,7 +142,6 @@ export default function App() {
       setSamayBills(prev => [newBill,...prev]); Alert.alert('✅ सेव हो गया');
     }
   };
-
   const handleEdit = (bill: SamayBill) => {
     setKisanName(bill.kisanName); setKisanPata(bill.pata); setKisanMobile(bill.mobile); setKisanKarya(bill.karya || ''); setKisanDinank(bill.dinank);
     setStartTime(bill.startTime); setStartAmPm(bill.startAmPm); setEndTime(bill.endTime); setEndAmPm(bill.endAmPm);
@@ -199,34 +149,22 @@ export default function App() {
     setTimeResult({ hoursStr: bill.totalHours, amount: `₹${bill.totalAmount}`, totalMin: bill.totalMinutes });
     setCalcScreen('samay');
   };
-
   const handleDelete = (id: string) => {
     Alert.alert('डिलीट?', 'हटाना है?', [{text:'नहीं', style:'cancel'}, {text:'हाँ', style:'destructive', onPress:()=>setSamayBills(prev=>prev.filter(b=>b.id!==id))}]);
   };
-
   const shareBill = async (bill: SamayBill) => {
-    const karyaLine = bill.karya ? `🔧 कार्य: ${bill.karya}\n` : '';
+    const karyaLine = bill.karya? `🔧 कार्य: ${bill.karya}\n` : '';
     const msg = `🚜 *TARZAN KATLAM - हार्वेस्टर बिल*\n\n👨‍🌾 किसान: ${bill.kisanName}\n📍 पता: ${bill.pata}\n📱 मोबाइल: ${bill.mobile}\n${karyaLine}📅 दिनांक: ${bill.dinank}\n\n⏰ Start: ${bill.startTime} ${bill.startAmPm}\n⏰ End: ${bill.endTime} ${bill.endAmPm}\n⏳ टोटल: ${bill.totalHours}\n💰 दर: ₹${bill.hourlyRate}/घंटा\n💵 *कुल राशि: ₹${bill.totalAmount}*\n\nधन्यवाद! 🙏`;
     try{ await Share.share({message: msg}); } catch(e){ Alert.alert('बिल', msg); }
   };
-
   const sharePDF = async (bill: SamayBill) => {
     try {
       const html = getBillHtml(bill);
       const { uri } = await Print.printToFileAsync({ html });
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { 
-          mimeType: 'application/pdf',
-          dialogTitle: `Bill - ${bill.kisanName}.pdf`,
-          UTI: 'com.adobe.pdf'
-        });
-      } else {
-        Alert.alert('PDF बन गया', `फाइल: ${uri}`);
-      }
-    } catch (e) {
-      console.log('PDF Error', e);
-      Alert.alert('Error', 'PDF बनाने में दिक्कत आई');
-    }
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `Bill - ${bill.kisanName}.pdf`, UTI: 'com.adobe.pdf' });
+      } else { Alert.alert('PDF बन गया', `फाइल: ${uri}`); }
+    } catch (e) { Alert.alert('Error', 'PDF बनाने में दिक्कत आई'); }
   };
 
   if (showSplash) { return (<View style={styles.splashContainer}><Image source={require('./assets/splash.png')} style={styles.splashImage} resizeMode="contain" /><View style={styles.loadingContainer}><View style={styles.progressBarBackground}><View style={[styles.progressBarFill, { width: `${loading}%` }]} /></View><Text style={styles.loadingText}>Loading {loading}%</Text></View></View>); }
@@ -240,6 +178,84 @@ export default function App() {
     const formDef = (KHARCH_DATA.forms as any)[kharchPage] || (KHARCH_DATA.forms as any).anya;
     return (<View style={styles.mainContainer}><View style={styles.calcPageHeader}><TouchableOpacity onPress={()=>setKharchPage(null)}><Text style={styles.backText}>← वापस</Text></TouchableOpacity><Text style={styles.calcPageTitle}>{currentCat?.name}</Text><View style={{ width: 50 }} /></View><View style={[styles.totalCard, { margin: 10, marginBottom: 5 }]}><Text style={styles.totalText}>कुल: ₹ {totalForCat}</Text></View><View style={{ flex: 1, padding: 10 }}><View style={styles.tableHeader}>{formDef.tableHeads.map((h: string, i: number) => (<Text key={i} style={styles.th}>{h}</Text>))}</View><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{entriesForCat.map((e, idx) => (<View key={idx} style={styles.tableRow}><Text style={styles.td}>{e.tithi}</Text><Text style={styles.td}>{getSecondFieldValue(e)}</Text><Text style={styles.td}>₹{e.rashi}</Text><Text style={styles.td}>{e.payment}</Text></View>))}</ScrollView></View><TouchableOpacity style={styles.fab} onPress={()=>{ setFormValues({ tithi: '8.10.2026', litre: '', rashi: '', payment: formDef.paymentOptions[0] }); setShowKharchForm(true); }}><Text style={styles.fabText}>+</Text></TouchableOpacity><Modal visible={showKharchForm} animationType="slide" transparent><View style={styles.modalBg}><View style={styles.formCard}><Text style={styles.formTitle}>{formDef.title}</Text>{formDef.fields.map((f: any) => (<View key={f.key} style={{ marginTop: 12 }}><Text style={styles.timeLabel}>{f.label}</Text><TextInput style={styles.input} placeholder={f.placeholder} value={formValues[f.key]} onChangeText={(v)=>setFormValues({...formValues, [f.key]: v })} /></View>))}<TouchableOpacity style={[styles.blueButton, { backgroundColor: '#4A90E2', marginTop: 20 }]} onPress={()=>{ setKharchEntries([...kharchEntries, { catId: kharchPage,...formValues }]); setShowKharchForm(false); }}><Text style={styles.blueButtonText}>{formDef.saveButton}</Text></TouchableOpacity><TouchableOpacity style={{ marginTop: 12, alignItems: 'center' }} onPress={()=>setShowKharchForm(false)}><Text style={{ color: '#777' }}>बंद करें</Text></TouchableOpacity></View></View></Modal></View>);
   }
+
+  const filteredOrders = orders.filter(o => {
+    if(!searchOrder.trim()) return true;
+    const q = searchOrder.toLowerCase();
+    return (o.name?.toLowerCase().includes(q) || o.mobile?.includes(q) || o.pata?.toLowerCase().includes(q) || o.karya?.toLowerCase().includes(q) || o.block?.toLowerCase().includes(q) || o.jila?.toLowerCase().includes(q));
+  });
+  const handleSaveOrder = () => {
+    if(!orderForm.name.trim()){ Alert.alert('नाम लिखें'); return; }
+    if(!orderForm.mobile.trim()){ Alert.alert('मोबाइल लिखें'); return; }
+    if(editingOrderId){
+      setOrders(prev => prev.map(o => o.id===editingOrderId? { id: editingOrderId,...orderForm } : o));
+      setEditingOrderId(null);
+    } else {
+      const newOrder: OrderItem = { id: Date.now().toString(),...orderForm };
+      setOrders(prev => [newOrder,...prev]);
+    }
+    setShowOrderForm(false);
+    setOrderForm({ name:'', pata:'', block:'', jila:'', rajya:'छत्तीसगढ़', mobile:'', karya:'', trolly:'लगाना है', dinank:'', samay:'', ekad:'' });
+  };
+  const handleEditOrder = (o: OrderItem) => {
+    setOrderForm({ name:o.name, pata:o.pata, block:o.block, jila:o.jila, rajya:o.rajya, mobile:o.mobile, karya:o.karya, trolly:o.trolly, dinank:o.dinank, samay:o.samay, ekad:o.ekad });
+    setEditingOrderId(o.id);
+    setShowOrderForm(true);
+  };
+  const handleDeleteOrder = (id: string) => {
+    Alert.alert('डिलीट करें?', 'यह ऑर्डर हटाना है?', [{text:'नहीं', style:'cancel'}, {text:'हाँ, हटाएँ', style:'destructive', onPress:()=> setOrders(prev=>prev.filter(o=>o.id!==id))}]);
+  };
+  const handleCall = (mobile: string) => { Linking.openURL(`tel:${mobile}`).catch(()=>Alert.alert('कॉल नहीं हो पा रहा')); };
+  const handleWhatsApp = (mobile: string) => { const msg = `नमस्ते! Tarzan Katlam Harvester Service 🚜`; Linking.openURL(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`).catch(()=>Alert.alert('WhatsApp नहीं खुल रहा')); };
+  const handleMessage = (mobile: string) => { Linking.openURL(`sms:${mobile}`).catch(()=>Alert.alert('मैसेज नहीं खुल रहा')); };
+
+  const renderOrderMain = () => (
+    <View style={{ flex: 1, backgroundColor: '#F5F7FB' }}>
+      <View style={{ padding: 12 }}>
+        <View style={styles.orderTopBox}><Text style={styles.orderTopText}>📝 कुल ऑर्डर: {orders.length}</Text></View>
+        <View style={styles.searchBox}><TextInput style={styles.searchInput} placeholder="🔍 सर्च करें (नाम / मोबाइल नं. / पता / कार्य)" placeholderTextColor="#888" value={searchOrder} onChangeText={setSearchOrder} /></View>
+      </View>
+      <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 100 }}>
+        {filteredOrders.length===0? (
+          <View style={{ alignItems: 'center', marginTop: 80 }}><Text style={{ color: '#999', fontSize: 14 }}>{orders.length===0? 'कोई ऑर्डर नहीं, + से नया ऑर्डर जोड़ें' : 'कुछ नहीं मिला'}</Text></View>
+        ) : filteredOrders.map(item => (
+          <View key={item.id} style={styles.orderCard}>
+            <Text style={styles.orderName}>🌾 {item.name}</Text>
+            <Text style={styles.orderLine}>📍 पता: {item.pata} {item.block? `| ब्लॉक: ${item.block}` : ''}</Text>
+            <Text style={styles.orderLine}>🏠 जिला: {item.jila} {item.rajya? `| राज्य: ${item.rajya}` : ''}</Text>
+            <Text style={styles.orderLine}>📞 मोबाइल: {item.mobile}</Text>
+            <Text style={styles.orderLine}>🔧 कार्य: {item.karya || '-'}</Text>
+            <Text style={styles.orderLine}>🚛 ट्रॉली: {item.trolly || '-'}</Text>
+            <Text style={styles.orderLine}>📅 दिनांक: {item.dinank} {item.samay? `| ⏰ समय: ${item.samay}` : ''} {item.ekad? `| 🌾 एकड़: ${item.ekad}` : ''}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, gap: 8 }}>
+              <TouchableOpacity style={[styles.orderBtn, { backgroundColor: '#4CAF50' }]} onPress={()=>handleCall(item.mobile)}><Text style={styles.orderBtnText}>📞 कॉल</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.orderBtn, { backgroundColor: '#2E9D5A' }]} onPress={()=>handleWhatsApp(item.mobile)}><Text style={styles.orderBtnText}>🟢 व्हाट्सएप</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.orderBtn, { backgroundColor: '#4A90E2' }]} onPress={()=>handleMessage(item.mobile)}><Text style={styles.orderBtnText}>💬 मैसेज</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.orderBtn, { backgroundColor: '#FF9800' }]} onPress={()=>handleEditOrder(item)}><Text style={styles.orderBtnText}>✏️ एडिट</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.orderBtn, { backgroundColor: '#D32F2F' }]} onPress={()=>handleDeleteOrder(item.id)}><Text style={styles.orderBtnText}>🗑️ डिलीट</Text></TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+      <TouchableOpacity style={styles.orderFab} onPress={()=>{ setEditingOrderId(null); setOrderForm({ name:'', pata:'', block:'', jila:'', rajya:'छत्तीसगढ़', mobile:'', karya:'', trolly:'लगाना है', dinank:'', samay:'', ekad:'' }); setShowOrderForm(true); }}><Text style={{ color: '#fff', fontSize: 28, fontWeight: 'bold' }}>+</Text></TouchableOpacity>
+      <Modal visible={showOrderForm} animationType="slide" transparent>
+        <View style={styles.modalBg}><View style={[styles.formCard, { maxHeight: '92%' }]}><ScrollView showsVerticalScrollIndicator={false}>
+          <Text style={styles.formTitle}>{editingOrderId? '✏️ ऑर्डर एडिट करें' : '➕ नया ऑर्डर जोड़ें'}</Text>
+          <Text style={styles.timeLabel}>किसान का नाम *</Text><TextInput style={styles.input} placeholder="जैसे - रामविलास साहू" value={orderForm.name} onChangeText={v=>setOrderForm({...orderForm, name:v})} />
+          <Text style={[styles.timeLabel,{marginTop:10}]}>पता / गांव *</Text><TextInput style={styles.input} placeholder="गांव का नाम" value={orderForm.pata} onChangeText={v=>setOrderForm({...orderForm, pata:v})} />
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}><View style={{ flex: 1 }}><Text style={styles.timeLabel}>ब्लॉक</Text><TextInput style={styles.input} placeholder="चारामा" value={orderForm.block} onChangeText={v=>setOrderForm({...orderForm, block:v})} /></View><View style={{ flex: 1 }}><Text style={styles.timeLabel}>जिला</Text><TextInput style={styles.input} placeholder="कांकेर" value={orderForm.jila} onChangeText={v=>setOrderForm({...orderForm, jila:v})} /></View></View>
+          <Text style={[styles.timeLabel,{marginTop:10}]}>राज्य</Text><TextInput style={styles.input} placeholder="छत्तीसगढ़" value={orderForm.rajya} onChangeText={v=>setOrderForm({...orderForm, rajya:v})} />
+          <Text style={[styles.timeLabel,{marginTop:10}]}>मोबाइल नं. *</Text><TextInput style={styles.input} placeholder="9479025929" keyboardType="phone-pad" value={orderForm.mobile} onChangeText={v=>setOrderForm({...orderForm, mobile:v})} />
+          <Text style={[styles.timeLabel,{marginTop:10}]}>कार्य</Text><TextInput style={styles.input} placeholder="धान कटाई, जोताई..." value={orderForm.karya} onChangeText={v=>setOrderForm({...orderForm, karya:v})} />
+          <Text style={[styles.timeLabel,{marginTop:10}]}>ट्रॉली</Text><View style={{ flexDirection: 'row', gap: 8 }}><TouchableOpacity style={[styles.trollyChip, orderForm.trolly==='लगाना है' && styles.trollyActive]} onPress={()=>setOrderForm({...orderForm, trolly:'लगाना है'})}><Text style={orderForm.trolly==='लगाना है'? styles.trollyActiveText: styles.trollyText}>लगाना है</Text></TouchableOpacity><TouchableOpacity style={[styles.trollyChip, orderForm.trolly==='नहीं लगाना' && styles.trollyActive]} onPress={()=>setOrderForm({...orderForm, trolly:'नहीं लगाना'})}><Text style={orderForm.trolly==='नहीं लगाना'? styles.trollyActiveText: styles.trollyText}>नहीं लगाना</Text></TouchableOpacity></View>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}><View style={{ flex: 1 }}><Text style={styles.timeLabel}>दिनांक</Text><TextInput style={styles.input} placeholder="25.9.2026" value={orderForm.dinank} onChangeText={v=>setOrderForm({...orderForm, dinank:v})} /></View><View style={{ flex: 1 }}><Text style={styles.timeLabel}>समय</Text><TextInput style={styles.input} placeholder="11 बजे" value={orderForm.samay} onChangeText={v=>setOrderForm({...orderForm, samay:v})} /></View></View>
+          <Text style={[styles.timeLabel,{marginTop:10}]}>एकड़</Text><TextInput style={styles.input} placeholder="10" keyboardType="numeric" value={orderForm.ekad} onChangeText={v=>setOrderForm({...orderForm, ekad:v})} />
+          <TouchableOpacity style={[styles.blueButton, { backgroundColor: '#2E9D5A', marginTop: 20 }]} onPress={handleSaveOrder}><Text style={styles.blueButtonText}>💾 सेव करें</Text></TouchableOpacity>
+          <TouchableOpacity style={{ marginTop: 12, alignItems: 'center', padding: 10 }} onPress={()=>setShowOrderForm(false)}><Text style={{ color: '#777' }}>बंद करें</Text></TouchableOpacity>
+        </ScrollView></View></View>
+      </Modal>
+    </View>
+  );
 
   const renderKharchMain = () => (<ScrollView contentContainerStyle={{ padding: 15, paddingBottom: 90 }}><Text style={styles.header}>{KHARCH_DATA.header}</Text><View style={styles.totalCard}><Text style={styles.totalText}>कुल खर्च: ₹ {grandTotal || 0}</Text></View><Text style={styles.categoryLabel}>{KHARCH_DATA.categoryLabel}</Text><View style={styles.chipContainer}>{KHARCH_DATA.categories.map(cat => (<TouchableOpacity key={cat.id} style={[styles.chip, { borderColor: cat.color }]} onPress={()=>setKharchPage(cat.id)}><Text style={[styles.chipText, { color: cat.color }]}>{cat.name}</Text></TouchableOpacity>))}</View></ScrollView>);
 
@@ -263,25 +279,13 @@ export default function App() {
       </View>
     </ScrollView>
   );
-
   const renderSamayListScreen = () => (
     <View style={{ flex: 1, padding: 12 }}><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{samayBills.length===0? <View style={{ alignItems: 'center', marginTop: 100 }}><Text style={{ color: '#999' }}>कोई बिल नहीं</Text></View> : samayBills.map(bill => (<View key={bill.id} style={styles.billCard}>
-      {/* TOP ROW: Left - Name+Pata, Right - Date+Karya */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, marginRight: 10 }}>
-          <Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text>
-          <Text style={styles.billSub} numberOfLines={1}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.billDate}>{bill.dinank}</Text>
-          {bill.karya ? <Text style={styles.karyaRight} numberOfLines={2}>🔧 कार्य: {bill.karya}</Text> : null}
-        </View>
+        <View style={{ flex: 1, marginRight: 10 }}><Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text><Text style={styles.billSub} numberOfLines={1}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text></View>
+        <View style={{ alignItems: 'flex-end' }}><Text style={styles.billDate}>{bill.dinank}</Text>{bill.karya? <Text style={styles.karyaRight} numberOfLines={2}>🔧 कार्य: {bill.karya}</Text> : null}</View>
       </View>
-      <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} />
-      <View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View>
-      <View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View>
-    </View>))}</ScrollView></View>
+      <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} /><View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View><View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View></View>))}</ScrollView></View>
   );
 
   return (
@@ -289,15 +293,14 @@ export default function App() {
       <View style={{ flex: 1 }}>
         {activeTab === 'home' && (<ScrollView contentContainerStyle={styles.buttonContainer}><Text style={styles.header}>TARZAN KATLAM</Text>{HOME_BUTTONS.map(btn => (<TouchableOpacity key={btn.id} style={[styles.button, { backgroundColor: btn.color }]} onPress={() => Alert.alert(btn.name)}><Text style={styles.buttonText}>{btn.name}</Text></TouchableOpacity>))}</ScrollView>)}
         {activeTab === 'kharch' && renderKharchMain()}
+        {activeTab === 'order' && renderOrderMain()}
         {activeTab === 'setting' && (<ScrollView contentContainerStyle={styles.settingContainer}><Text style={styles.settingHeader}>{SETTING_DATA.header}</Text><View style={styles.card}><Text style={styles.cardTitle}>{SETTING_DATA.calculator.title}</Text><TouchableOpacity style={[styles.blueButton, { backgroundColor: SETTING_DATA.calculator.buttonColor }]} onPress={() => { setShowCalculator(true); setCalcScreen('main'); }}><Text style={styles.blueButtonText}>{SETTING_DATA.calculator.buttonText}</Text></TouchableOpacity></View><View style={styles.card}><Text style={styles.cardTitle}>{SETTING_DATA.password.title}</Text><TextInput style={styles.input} placeholder={SETTING_DATA.password.placeholder} value={newPassword} onChangeText={setNewPassword} secureTextEntry /><TouchableOpacity style={[styles.greenButton, { backgroundColor: SETTING_DATA.password.buttonColor }]} onPress={() => { if (!newPassword) { Alert.alert('पासवर्ड लिखें'); return; } Alert.alert('सफल', newPassword); setNewPassword(''); }}><Text style={styles.greenButtonText}>{SETTING_DATA.password.buttonText}</Text></TouchableOpacity></View></ScrollView>)}
-        {activeTab === 'order' && <View style={styles.otherContainer}><Text style={styles.otherTitle}>ऑर्डर</Text></View>}
       </View>
       <View style={styles.bottomBar}>{NAV_TABS.map(tab => (<TouchableOpacity key={tab.id} style={styles.tab} onPress={() => setActiveTab(tab.key)}><Text style={[styles.tabIcon, activeTab === tab.key && styles.activeTab]}>{tab.icon}</Text><Text style={[styles.tabText, activeTab === tab.key && styles.activeTab]}>{tab.name}</Text></TouchableOpacity>))}</View>
       <Modal visible={showCalculator} animationType="slide"><View style={styles.calcPage}><View style={styles.calcPageHeader}><TouchableOpacity onPress={() => { if(calcScreen === 'main') setShowCalculator(false); else if(calcScreen === 'samay_list') setCalcScreen('samay'); else setCalcScreen('main'); }}><Text style={styles.backText}>{calcScreen === 'main'? '✕ बंद' : '← वापस'}</Text></TouchableOpacity><Text style={styles.calcPageTitle}>{calcScreen === 'samay_list'? '📋 बिल लिस्ट' : CALCULATOR_DATA.header}</Text><View style={{ width: 50 }} /></View>{calcScreen === 'main' && (<View style={{ padding: 15, paddingTop: 20 }}>{CALCULATOR_DATA.menu.map((item) => (<TouchableOpacity key={item.id} style={[styles.bigCalcBtn, { backgroundColor: item.color }]} onPress={() => setCalcScreen(item.id as CalcScreen)}><Text style={styles.bigCalcIcon}>{item.icon} {item.name}</Text><Text style={styles.bigCalcSub}>{item.sub}</Text></TouchableOpacity>))}</View>)}{calcScreen === 'samay' && renderSamayScreen()}{calcScreen === 'samay_list' && renderSamayListScreen()}{calcScreen === 'umr' && (<ScrollView contentContainerStyle={{ padding: 20 }}><Text style={styles.normalTitle}>{CALCULATOR_DATA.screens.umr.title}</Text><View style={styles.card}><Text style={styles.timeLabel}>{CALCULATOR_DATA.screens.umr.dobLabel}</Text><TextInput style={styles.input} value={dobStr} onChangeText={setDobStr} placeholder={CALCULATOR_DATA.screens.umr.dobPlaceholder} keyboardType="numeric" /><Text style={[styles.timeLabel, {marginTop: 15}]}>{CALCULATOR_DATA.screens.umr.todayLabel}</Text><TextInput style={styles.input} value={todayStr} onChangeText={setTodayStr} placeholder={CALCULATOR_DATA.screens.umr.todayPlaceholder} keyboardType="numeric" /><TouchableOpacity style={[styles.blueButton, { backgroundColor: CALCULATOR_DATA.screens.umr.color, marginTop: 20 }]} onPress={()=>{ const dob=parseDateDMY(dobStr); const today=parseDateDMY(todayStr); if(!dob||!today){Alert.alert('तारीख सही'); return;} let y=today.getFullYear()-dob.getFullYear(); let mo=today.getMonth()-dob.getMonth(); let da=today.getDate()-dob.getDate(); if(da<0){mo--; const pm=new Date(today.getFullYear(),today.getMonth(),0); da+=pm.getDate();} if(mo<0){y--; mo+=12;} setAgeResult(`${y} साल ${mo} महीना ${da} दिन`); }}><Text style={styles.blueButtonText}>{CALCULATOR_DATA.screens.umr.buttonText}</Text></TouchableOpacity>{ageResult? (<View style={[styles.resultCard, { backgroundColor: '#E6E6FA', marginTop: 20 }]}><Text style={styles.resultLabel}>उम्र</Text><Text style={styles.resultValue}>{ageResult}</Text></View>):null}</View></ScrollView>)}</View></Modal>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   splashContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
   splashImage: { width: '85%', height: '60%' },
@@ -375,4 +378,18 @@ const styles = StyleSheet.create({
   karyaRight: { fontSize: 13, color: '#000', fontWeight: '700', marginTop: 6, backgroundColor: '#FFF3E0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, textAlign: 'right' },
   actionBtn: { borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   actionBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  orderTopBox: { backgroundColor: '#fff', borderRadius: 12, padding: 14, alignItems: 'center', elevation: 2, borderWidth: 1, borderColor: '#e0e0e0' },
+  orderTopText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  searchBox: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, marginTop: 10, borderWidth: 1, borderColor: '#ddd', elevation: 1 },
+  searchInput: { paddingVertical: 12, fontSize: 14, color: '#000' },
+  orderCard: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 12, elevation: 3, borderLeftWidth: 4, borderLeftColor: '#2E9D5A' },
+  orderName: { fontSize: 17, fontWeight: 'bold', color: '#1B5E20', marginBottom: 6 },
+  orderLine: { fontSize: 13, color: '#333', marginTop: 3, lineHeight: 18 },
+  orderBtn: { borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, minWidth: 80, alignItems: 'center' },
+  orderBtnText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
+  orderFab: { position: 'absolute', right: 18, bottom: 18, width: 56, height: 56, borderRadius: 28, backgroundColor: '#212121', justifyContent: 'center', alignItems: 'center', elevation: 6 },
+  trollyChip: { flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: '#fff' },
+  trollyActive: { backgroundColor: '#2E9D5A', borderColor: '#2E9D5A' },
+  trollyText: { color: '#555', fontWeight: '600' },
+  trollyActiveText: { color: '#fff', fontWeight: 'bold' },
 });
