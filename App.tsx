@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, Text, TouchableOpacity, ScrollView, Alert, TextInput, Modal, Share, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { HOME_BUTTONS, NAV_TABS, SETTING_DATA, CALCULATOR_DATA, KHARCH_DATA } from './master_data';
 
 type TabKey = 'home' | 'kharch' | 'order' | 'setting';
@@ -28,9 +30,74 @@ function parseDateDMY(str: string): Date | null {
 }
 
 interface SamayBill {
-  id: string; kisanName: string; pata: string; mobile: string; dinank: string;
+  id: string; kisanName: string; pata: string; mobile: string; karya: string; dinank: string;
   startTime: string; startAmPm: AmPm; endTime: string; endAmPm: AmPm;
   hourlyRate: string; totalHours: string; totalAmount: string; totalMinutes: number;
+}
+
+// --- PDF HTML TEMPLATE WITH KARYA ---
+function getBillHtml(bill: SamayBill): string {
+  return `
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Helvetica, Arial, sans-serif; padding: 24px; color: #222; }
+      .header { text-align: center; border-bottom: 3px solid #2E9D5A; padding-bottom: 15px; margin-bottom: 20px; }
+      .header h1 { margin: 0; font-size: 28px; color: #2E9D5A; letter-spacing: 1px; }
+      .header p { margin: 4px 0 0 0; font-size: 14px; color: #555; }
+      .section { background: #F9F9F9; border-radius: 10px; padding: 15px 18px; margin-bottom: 15px; }
+      .section h3 { margin: 0 0 10px 0; color: #2E9D5A; font-size: 16px; }
+      .row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px; }
+      .row span:first-child { color: #666; }
+      .row span:last-child { font-weight: bold; }
+      .karya-box { background: #FFF8E1; border: 1px solid #FFD54F; border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
+      .karya-label { font-size: 12px; color: #8D6E63; }
+      .karya-value { font-size: 15px; font-weight: bold; color: #000; margin-top: 3px; }
+      .highlight { background: #E8F5E9; border: 2px dashed #2E9D5A; border-radius: 12px; padding: 15px; text-align: center; margin-top: 20px; }
+      .highlight .time { font-size: 16px; font-weight: bold; }
+      .highlight .amount { font-size: 26px; font-weight: 900; color: #B71C1C; margin-top: 8px; }
+      .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🚜 TARZAN KATLAM</h1>
+      <p>हार्वेस्टर सेवा - प्रोफेशनल बिल</p>
+      <p>मो. 9479025929 | पिपरौद</p>
+    </div>
+
+    <div class="section">
+      <h3>👨‍🌾 किसान की जानकारी</h3>
+      <div class="row"><span>नाम:</span><span>${bill.kisanName}</span></div>
+      <div class="row"><span>पता / गांव:</span><span>${bill.pata}</span></div>
+      <div class="row"><span>मोबाइल:</span><span>${bill.mobile}</span></div>
+      <div class="karya-box">
+        <div class="karya-label">कार्य:</div>
+        <div class="karya-value">${bill.karya || '-'}</div>
+      </div>
+      <div class="row" style="margin-top:10px"><span>दिनांक:</span><span>${bill.dinank}</span></div>
+    </div>
+
+    <div class="section">
+      <h3>⏰ समय का विवरण</h3>
+      <div class="row"><span>Start Time:</span><span>${bill.startTime} ${bill.startAmPm}</span></div>
+      <div class="row"><span>End Time:</span><span>${bill.endTime} ${bill.endAmPm}</span></div>
+      <div class="row"><span>दर (प्रति घंटा):</span><span>₹ ${bill.hourlyRate}</span></div>
+    </div>
+
+    <div class="highlight">
+      <div class="time">कुल समय: ${bill.totalHours}</div>
+      <div class="amount">कुल राशि: ₹ ${bill.totalAmount}</div>
+    </div>
+
+    <div class="footer">
+      <p>धन्यवाद! 🙏 फिर से सेवा का मौका दें</p>
+      <p>यह बिल कंप्यूटर द्वारा बनाया गया है</p>
+    </div>
+  </body>
+  </html>
+  `;
 }
 
 export default function App() {
@@ -42,6 +109,7 @@ export default function App() {
   const [kisanName, setKisanName] = useState('टार्जन कतलाम');
   const [kisanPata, setKisanPata] = useState('पिपरौद');
   const [kisanMobile, setKisanMobile] = useState('9479025929');
+  const [kisanKarya, setKisanKarya] = useState('');
   const [kisanDinank, setKisanDinank] = useState('14.05.1989');
   const [startTime, setStartTime] = useState('8.39');
   const [startAmPm, setStartAmPm] = useState<AmPm>('AM');
@@ -63,19 +131,22 @@ export default function App() {
     return () => { clearInterval(interval); clearTimeout(timer); };
   }, []);
 
-  // --- LOAD SAVED DATA ---
   useEffect(() => {
     (async () => {
       try {
         const savedBills = await AsyncStorage.getItem('SAMAY_BILLS');
-        if (savedBills) setSamayBills(JSON.parse(savedBills));
+        if (savedBills) {
+          const parsed = JSON.parse(savedBills);
+          // Migration: old bills without karya field
+          const migrated = parsed.map((b:any)=> ({...b, karya: b.karya || ''}));
+          setSamayBills(migrated);
+        }
         const savedKharch = await AsyncStorage.getItem('KHARCH_ENTRIES');
         if (savedKharch) setKharchEntries(JSON.parse(savedKharch));
       } catch (e) { console.log('load error', e); }
     })();
   }, []);
 
-  // --- SAVE BILLS ---
   useEffect(() => {
     AsyncStorage.setItem('SAMAY_BILLS', JSON.stringify(samayBills)).catch(()=>{});
   }, [samayBills]);
@@ -84,7 +155,6 @@ export default function App() {
     AsyncStorage.setItem('KHARCH_ENTRIES', JSON.stringify(kharchEntries)).catch(()=>{});
   }, [kharchEntries]);
 
-  // --- ANDROID BACK BUTTON ---
   useEffect(() => {
     const onBackPress = () => {
       if (showKharchForm) { setShowKharchForm(false); return true; }
@@ -95,7 +165,7 @@ export default function App() {
         setShowCalculator(false); return true;
       }
       if (activeTab !== 'home') { setActiveTab('home'); return true; }
-      return false; // allow exit
+      return false;
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
@@ -114,16 +184,16 @@ export default function App() {
     const amount = `${(dec*r).toFixed(0)}`;
     setTimeResult({hoursStr, amount: `₹${amount}`, totalMin: d});
     if(editingId){
-      setSamayBills(prev => prev.map(b => b.id===editingId? {...b, kisanName: kisanName.trim(), pata: kisanPata.trim(), mobile: kisanMobile.trim(), dinank: kisanDinank.trim(), startTime, startAmPm, endTime, endAmPm, hourlyRate, totalHours: hoursStr, totalAmount: amount, totalMinutes: d} : b));
+      setSamayBills(prev => prev.map(b => b.id===editingId? {...b, kisanName: kisanName.trim(), pata: kisanPata.trim(), mobile: kisanMobile.trim(), karya: kisanKarya.trim(), dinank: kisanDinank.trim(), startTime, startAmPm, endTime, endAmPm, hourlyRate, totalHours: hoursStr, totalAmount: amount, totalMinutes: d} : b));
       setEditingId(null); Alert.alert('✅ अपडेट हो गया');
     } else {
-      const newBill: SamayBill = { id: Date.now().toString(), kisanName: kisanName.trim(), pata: kisanPata.trim(), mobile: kisanMobile.trim(), dinank: kisanDinank.trim(), startTime, startAmPm, endTime, endAmPm, hourlyRate, totalHours: hoursStr, totalAmount: amount, totalMinutes: d };
+      const newBill: SamayBill = { id: Date.now().toString(), kisanName: kisanName.trim(), pata: kisanPata.trim(), mobile: kisanMobile.trim(), karya: kisanKarya.trim(), dinank: kisanDinank.trim(), startTime, startAmPm, endTime, endAmPm, hourlyRate, totalHours: hoursStr, totalAmount: amount, totalMinutes: d };
       setSamayBills(prev => [newBill,...prev]); Alert.alert('✅ सेव हो गया');
     }
   };
 
   const handleEdit = (bill: SamayBill) => {
-    setKisanName(bill.kisanName); setKisanPata(bill.pata); setKisanMobile(bill.mobile); setKisanDinank(bill.dinank);
+    setKisanName(bill.kisanName); setKisanPata(bill.pata); setKisanMobile(bill.mobile); setKisanKarya(bill.karya || ''); setKisanDinank(bill.dinank);
     setStartTime(bill.startTime); setStartAmPm(bill.startAmPm); setEndTime(bill.endTime); setEndAmPm(bill.endAmPm);
     setHourlyRate(bill.hourlyRate); setEditingId(bill.id);
     setTimeResult({ hoursStr: bill.totalHours, amount: `₹${bill.totalAmount}`, totalMin: bill.totalMinutes });
@@ -135,13 +205,28 @@ export default function App() {
   };
 
   const shareBill = async (bill: SamayBill) => {
-    const msg = `🚜 *TARZAN KATLAM - हार्वेस्टर बिल*\n\n👨‍🌾 किसान: ${bill.kisanName}\n📍 पता: ${bill.pata}\n📱 मोबाइल: ${bill.mobile}\n📅 दिनांक: ${bill.dinank}\n\n⏰ Start: ${bill.startTime} ${bill.startAmPm}\n⏰ End: ${bill.endTime} ${bill.endAmPm}\n⏳ टोटल: ${bill.totalHours}\n💰 दर: ₹${bill.hourlyRate}/घंटा\n💵 *कुल राशि: ₹${bill.totalAmount}*\n\nधन्यवाद! 🙏`;
+    const karyaLine = bill.karya ? `🔧 कार्य: ${bill.karya}\n` : '';
+    const msg = `🚜 *TARZAN KATLAM - हार्वेस्टर बिल*\n\n👨‍🌾 किसान: ${bill.kisanName}\n📍 पता: ${bill.pata}\n📱 मोबाइल: ${bill.mobile}\n${karyaLine}📅 दिनांक: ${bill.dinank}\n\n⏰ Start: ${bill.startTime} ${bill.startAmPm}\n⏰ End: ${bill.endTime} ${bill.endAmPm}\n⏳ टोटल: ${bill.totalHours}\n💰 दर: ₹${bill.hourlyRate}/घंटा\n💵 *कुल राशि: ₹${bill.totalAmount}*\n\nधन्यवाद! 🙏`;
     try{ await Share.share({message: msg}); } catch(e){ Alert.alert('बिल', msg); }
   };
 
   const sharePDF = async (bill: SamayBill) => {
-    const pdfText = `🚜 *TARZAN KATLAM - हार्वेस्टर बिल*\n\n👨‍🌾 किसान: ${bill.kisanName}\n📍 पता: ${bill.pata}\n📱 मोबाइल: ${bill.mobile}\n📅 दिनांक: ${bill.dinank}\n\n⏰ Start: ${bill.startTime} ${bill.startAmPm}\n⏰ End: ${bill.endTime} ${bill.endAmPm}\n⏳ टोटल: ${bill.totalHours}\n💰 दर: ₹${bill.hourlyRate}/घंटा\n💵 *कुल राशि: ₹${bill.totalAmount}*\n\nधन्यवाद! 🙏`;
-    try{ await Share.share({message: pdfText}); } catch(e){ Alert.alert('PDF बिल', pdfText); }
+    try {
+      const html = getBillHtml(bill);
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { 
+          mimeType: 'application/pdf',
+          dialogTitle: `Bill - ${bill.kisanName}.pdf`,
+          UTI: 'com.adobe.pdf'
+        });
+      } else {
+        Alert.alert('PDF बन गया', `फाइल: ${uri}`);
+      }
+    } catch (e) {
+      console.log('PDF Error', e);
+      Alert.alert('Error', 'PDF बनाने में दिक्कत आई');
+    }
   };
 
   if (showSplash) { return (<View style={styles.splashContainer}><Image source={require('./assets/splash.png')} style={styles.splashImage} resizeMode="contain" /><View style={styles.loadingContainer}><View style={styles.progressBarBackground}><View style={[styles.progressBarFill, { width: `${loading}%` }]} /></View><Text style={styles.loadingText}>Loading {loading}%</Text></View></View>); }
@@ -163,10 +248,11 @@ export default function App() {
       {timeResult && (<><View style={[styles.resultCard, { backgroundColor: '#EDE7F6' }]}><Text style={styles.resultLabelFull}>⏳ टोटल समय</Text><Text style={styles.resultValue}>{timeResult.hoursStr}</Text></View><View style={[styles.resultCard, { backgroundColor: '#FFF9C4', marginTop: 10 }]}><Text style={styles.resultLabelFull}>💰 कुल राशि</Text><Text style={[styles.resultValue, { fontSize: 20 }]}>{timeResult.amount}</Text></View></>)}
       <View style={[styles.card, { marginTop: 15 }]}>
         <Text style={styles.sectionTitle}>👨‍🌾 किसान की जानकारी</Text>
-        <Text style={styles.timeLabel}>किसान का नाम</Text><TextInput style={[styles.input, kisanName==='टार्जन कतलाम' && {color: '#777'}]} value={kisanName} onChangeText={(t)=>setKisanName(t)} placeholder="नाम" placeholderTextColor="#AAA" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>पता</Text><TextInput style={[styles.input, kisanPata==='पिपरौद' && {color: '#777'}]} value={kisanPata} onChangeText={(t)=>setKisanPata(t)} placeholder="पता" placeholderTextColor="#AAA" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>मो. न.</Text><TextInput style={[styles.input, kisanMobile==='9479025929' && {color: '#777'}]} value={kisanMobile} onChangeText={(t)=>setKisanMobile(t)} placeholder="मोबाइल" keyboardType="phone-pad" placeholderTextColor="#AAA" />
-        <Text style={[styles.timeLabel, {marginTop: 12}]}>दिनांक</Text><TextInput style={[styles.input, kisanDinank==='14.05.1989' && {color: '#777'}]} value={kisanDinank} onChangeText={(t)=>setKisanDinank(t)} placeholder="14.05.1989" placeholderTextColor="#AAA" />
+        <Text style={styles.timeLabel}>किसान का नाम</Text><TextInput style={styles.input} value={kisanName} onChangeText={(t)=>setKisanName(t)} placeholder="नाम" placeholderTextColor="#AAA" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>पता</Text><TextInput style={styles.input} value={kisanPata} onChangeText={(t)=>setKisanPata(t)} placeholder="पता" placeholderTextColor="#AAA" />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>मो. न.</Text><TextInput style={styles.input} value={kisanMobile} onChangeText={(t)=>setKisanMobile(t)} placeholder="मोबाइल" keyboardType="phone-pad" placeholderTextColor="#AAA" />
+        <Text style={[styles.timeLabel, {marginTop: 12, fontWeight:'bold', color:'#000'}]}>कार्य</Text><TextInput style={[styles.input, { minHeight: 55, textAlignVertical: 'top' }]} value={kisanKarya} onChangeText={(t)=>setKisanKarya(t)} placeholder="जैसे - धान कटाई, जोताई, मताई, गहाई" placeholderTextColor="#AAA" multiline={true} numberOfLines={2} />
+        <Text style={[styles.timeLabel, {marginTop: 12}]}>दिनांक</Text><TextInput style={styles.input} value={kisanDinank} onChangeText={(t)=>setKisanDinank(t)} placeholder="14.05.1989" placeholderTextColor="#AAA" />
         <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 18 }} />
         <Text style={styles.sectionTitle}>⏰ समय</Text>
         <Text style={styles.timeLabel}>Start time</Text><View style={styles.timeBox}><TextInput style={styles.timeInput} value={startTime} onChangeText={setStartTime} placeholder="8.39" keyboardType="numeric" /><View style={styles.ampmContainer}><TouchableOpacity style={[styles.ampmBtn, startAmPm==='AM' && styles.ampmActive]} onPress={()=>setStartAmPm('AM')}><Text style={[styles.ampmText, startAmPm==='AM' && styles.ampmActiveText]}>AM</Text></TouchableOpacity><TouchableOpacity style={[styles.ampmBtn, startAmPm==='PM' && styles.ampmActive]} onPress={()=>setStartAmPm('PM')}><Text style={[styles.ampmText, startAmPm==='PM' && styles.ampmActiveText]}>PM</Text></TouchableOpacity></View></View>
@@ -179,7 +265,7 @@ export default function App() {
   );
 
   const renderSamayListScreen = () => (
-    <View style={{ flex: 1, padding: 12 }}><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{samayBills.length===0? <View style={{ alignItems: 'center', marginTop: 100 }}><Text style={{ color: '#999' }}>कोई बिल नहीं</Text></View> : samayBills.map(bill => (<View key={bill.id} style={styles.billCard}><View style={styles.billHeaderRow}><Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text><Text style={styles.billDate}>{bill.dinank}</Text></View><Text style={styles.billSub}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text><View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} /><View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View><View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View></View>))}</ScrollView></View>
+    <View style={{ flex: 1, padding: 12 }}><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{samayBills.length===0? <View style={{ alignItems: 'center', marginTop: 100 }}><Text style={{ color: '#999' }}>कोई बिल नहीं</Text></View> : samayBills.map(bill => (<View key={bill.id} style={styles.billCard}><View style={styles.billHeaderRow}><Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text><Text style={styles.billDate}>{bill.dinank}</Text></View><Text style={styles.billSub}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text>{bill.karya ? <Text style={[styles.billSub, {color:'#000', fontWeight:'600', marginTop:4}]}>🔧 कार्य: {bill.karya}</Text> : null}<View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} /><View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View><View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View></View>))}</ScrollView></View>
   );
 
   return (
