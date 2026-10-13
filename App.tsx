@@ -265,7 +265,23 @@ export default function App() {
   );
 
   const renderSamayListScreen = () => (
-    <View style={{ flex: 1, padding: 12 }}><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{samayBills.length===0? <View style={{ alignItems: 'center', marginTop: 100 }}><Text style={{ color: '#999' }}>कोई बिल नहीं</Text></View> : samayBills.map(bill => (<View key={bill.id} style={styles.billCard}><View style={styles.billHeaderRow}><Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text><Text style={styles.billDate}>{bill.dinank}</Text></View><Text style={styles.billSub}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text>{bill.karya ? <Text style={[styles.billSub, {color:'#000', fontWeight:'600', marginTop:4}]}>🔧 कार्य: {bill.karya}</Text> : null}<View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} /><View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View><View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View></View>))}</ScrollView></View>
+    <View style={{ flex: 1, padding: 12 }}><ScrollView contentContainerStyle={{ paddingBottom: 100 }}>{samayBills.length===0? <View style={{ alignItems: 'center', marginTop: 100 }}><Text style={{ color: '#999' }}>कोई बिल नहीं</Text></View> : samayBills.map(bill => (<View key={bill.id} style={styles.billCard}>
+      {/* TOP ROW: Left - Name+Pata, Right - Date+Karya */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View style={{ flex: 1, marginRight: 10 }}>
+          <Text style={styles.billName} numberOfLines={1}>{bill.kisanName}</Text>
+          <Text style={styles.billSub} numberOfLines={1}>{bill.pata} {bill.mobile? '• '+bill.mobile : ''}</Text>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.billDate}>{bill.dinank}</Text>
+          {bill.karya ? <Text style={styles.karyaRight} numberOfLines={2}>🔧 कार्य: {bill.karya}</Text> : null}
+        </View>
+      </View>
+      <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 8 }} />
+      <View style={styles.billMiddleRow}><Text style={styles.billTime}>{bill.startTime} {bill.startAmPm} → {bill.endTime} {bill.endAmPm}</Text><Text style={styles.billHours}>{bill.totalHours}</Text></View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}><Text style={styles.billAmount}>₹{bill.totalAmount}</Text><View style={{ flexDirection: 'row' }}><TouchableOpacity style={styles.iconBtn} onPress={()=>handleEdit(bill)}><Text>✏️</Text></TouchableOpacity><TouchableOpacity style={[styles.iconBtn, {backgroundColor:'#FFEBEE', marginLeft:8}]} onPress={()=>handleDelete(bill.id)}><Text>🗑️</Text></TouchableOpacity></View></View>
+      <View style={{ flexDirection: 'row', marginTop: 12 }}><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#25D366', flex:1}]} onPress={()=>shareBill(bill)}><Text style={styles.actionBtnText}>📲 शेयर</Text></TouchableOpacity><TouchableOpacity style={[styles.actionBtn, {backgroundColor:'#E91E63', flex:1, marginLeft:10}]} onPress={()=>sharePDF(bill)}><Text style={styles.actionBtnText}>📄 PDF</Text></TouchableOpacity></View>
+    </View>))}</ScrollView></View>
   );
 
   return (
@@ -356,6 +372,7 @@ const styles = StyleSheet.create({
   billHours: { fontSize: 13, fontWeight: 'bold', color: '#2E9D5A' },
   billAmount: { fontSize: 19, fontWeight: 'bold', color: '#B71C1C' },
   iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center' },
+  karyaRight: { fontSize: 13, color: '#000', fontWeight: '700', marginTop: 6, backgroundColor: '#FFF3E0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, textAlign: 'right' },
   actionBtn: { borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
   actionBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 });
