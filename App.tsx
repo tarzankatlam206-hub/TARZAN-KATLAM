@@ -83,6 +83,7 @@ export default function App() {
   const [showKharchForm, setShowKharchForm] = useState(false);
   const [formValues, setFormValues] = useState<any>({ tithi: '8.10.2026', litre: '', rashi: '', parts_name: '', kaam: '', naam: '', kisan: '', hotel: '', days: '', vivaran: '', payment: 'नगद' });
   const [kharchEntries, setKharchEntries] = useState<any[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setLoading(p => p >= 100? 100 : p + 1), 25);
@@ -107,25 +108,31 @@ export default function App() {
         if (savedOrders) setOrders(JSON.parse(savedOrders));
       } catch (e) {
         console.log('load error', e);
+      } finally {
+        setIsDataLoaded(true);
       }
     })();
   }, []);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
     AsyncStorage.setItem('APP_PASSWORD', appPassword).catch(()=>{});
-  }, [appPassword]);
+  }, [appPassword, isDataLoaded]);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
     AsyncStorage.setItem('SAMAY_BILLS', JSON.stringify(samayBills)).catch(()=>{});
-  }, [samayBills]);
+  }, [samayBills, isDataLoaded]);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
     AsyncStorage.setItem('KHARCH_ENTRIES', JSON.stringify(kharchEntries)).catch(()=>{});
-  }, [kharchEntries]);
+  }, [kharchEntries, isDataLoaded]);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
     AsyncStorage.setItem('ORDER_LIST', JSON.stringify(orders)).catch(()=>{});
-  }, [orders]);
+  }, [orders, isDataLoaded]);
 
   useEffect(() => {
     const onBackPress = () => {
