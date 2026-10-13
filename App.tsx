@@ -24,6 +24,19 @@ function parseTimeToMinutes(timeStr: string, ampm: AmPm): number | null {
   return h * 60 + m;
 }
 
+interface KisanItem {
+  id: string;
+  name: string;
+  mobile: string;
+  pata: string;
+  totalRashi: string;
+  advanceRashi: string;
+  ghanta: string;
+  trolly: string;
+  karya?: string;
+  dinank?: string;
+}
+
 interface OrderItem {
   id: string; name: string; pata: string; block: string; jila: string; rajya: string;
   mobile: string; karya: string; trolly: string; dinank: string; samay: string; ekad: string;
@@ -79,6 +92,15 @@ export default function App() {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [orderForm, setOrderForm] = useState({ name:'', pata:'', block:'', jila:'', rajya:'', mobile:'', karya:'', trolly:'लगाना है', dinank:'', samay:'', ekad:'' });
+
+  // Kisan Section States
+  const [showKisanScreen, setShowKisanScreen] = useState(false);
+  const [kisanList, setKisanList] = useState<KisanItem[]>([]);
+  const [searchKisan, setSearchKisan] = useState('');
+  const [showKisanForm, setShowKisanForm] = useState(false);
+  const [editingKisanId, setEditingKisanId] = useState<string | null>(null);
+  const [kisanForm, setKisanForm] = useState({ name: '', mobile: '', pata: '', totalRashi: '', advanceRashi: '', ghanta: '', trolly: '', karya: '', dinank: '' });
+  const [selectedKisanDetail, setSelectedKisanDetail] = useState<KisanItem | null>(null);
   const [kharchPage, setKharchPage] = useState<string | null>(null);
   const [showKharchForm, setShowKharchForm] = useState(false);
   const [formValues, setFormValues] = useState<any>({ tithi: '8.10.2026', litre: '', rashi: '', parts_name: '', kaam: '', naam: '', kisan: '', hotel: '', days: '', vivaran: '', payment: 'नगद' });
@@ -106,6 +128,8 @@ export default function App() {
         if (savedKharch) setKharchEntries(JSON.parse(savedKharch));
         const savedOrders = await AsyncStorage.getItem('ORDER_LIST');
         if (savedOrders) setOrders(JSON.parse(savedOrders));
+        const savedKisan = await AsyncStorage.getItem('KISAN_LIST');
+        if (savedKisan) setKisanList(JSON.parse(savedKisan));
       } catch (e) {
         console.log('load error', e);
       } finally {
@@ -135,7 +159,15 @@ export default function App() {
   }, [orders, isDataLoaded]);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
+    AsyncStorage.setItem('KISAN_LIST', JSON.stringify(kisanList)).catch(()=>{});
+  }, [kisanList, isDataLoaded]);
+
+  useEffect(() => {
     const onBackPress = () => {
+      if (selectedKisanDetail) { setSelectedKisanDetail(null); return true; }
+      if (showKisanForm) { setShowKisanForm(false); return true; }
+      if (showKisanScreen) { setShowKisanScreen(false); return true; }
       if (showOrderForm) { setShowOrderForm(false); return true; }
       if (showKharchForm) { setShowKharchForm(false); return true; }
       if (kharchPage) { setKharchPage(null); return true; }
@@ -146,7 +178,7 @@ export default function App() {
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
-  }, [showSamayFolder, showSamayList, kharchPage, showKharchForm, activeTab, showOrderForm]);
+  }, [showSamayFolder, showSamayList, kharchPage, showKharchForm, activeTab, showOrderForm, showKisanScreen, showKisanForm, selectedKisanDetail]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -169,6 +201,54 @@ export default function App() {
         }
       ]
     );
+  };
+
+  const handleSaveKisan = () => {
+    const total = parseFloat(kisanForm.totalRashi) || 0;
+    if (!kisanForm.name.trim()) { Alert.alert('नाम लिखें'); return; }
+    const newItem: KisanItem = {
+      id: editingKisanId || Date.now().toString(),
+      name: kisanForm.name.trim() || 'रामदेव',
+      mobile: kisanForm.mobile.trim() || '8629984119',
+      pata: kisanForm.pata.trim() || 'मैनपुर',
+      totalRashi: kisanForm.totalRashi.trim() || '3500',
+      advanceRashi: kisanForm.advanceRashi.trim() || '1500',
+      ghanta: kisanForm.ghanta.trim() || '3 घंटा 10 मिनट',
+      trolly: kisanForm.trolly.trim() || '2',
+      karya: kisanForm.karya.trim(),
+      dinank: kisanForm.dinank.trim()
+    };
+    if (editingKisanId) {
+      setKisanList(prev => prev.map(k => k.id === editingKisanId? newItem : k));
+      setEditingKisanId(null);
+    } else {
+      setKisanList(prev => [newItem,...prev]);
+    }
+    setShowKisanForm(false);
+    setKisanForm({ name: '', mobile: '', pata: '', totalRashi: '', advanceRashi: '', ghanta: '', trolly: '', karya: '', dinank: '' });
+  };
+
+  const handleEditKisan = (item: KisanItem) => {
+    setKisanForm({
+      name: item.name,
+      mobile: item.mobile,
+      pata: item.pata,
+      totalRashi: item.totalRashi,
+      advanceRashi: item.advanceRashi,
+      ghanta: item.ghanta,
+      trolly: item.trolly,
+      karya: item.karya || '',
+      dinank: item.dinank || ''
+    });
+    setEditingKisanId(item.id);
+    setShowKisanForm(true);
+  };
+
+  const handleDeleteKisan = (id: string) => {
+    Alert.alert('डिलीट?', 'इस किसान को हटाना है?', [
+      { text: 'नहीं', style: 'cancel' },
+      { text: 'हाँ', style: 'destructive', onPress: () => setKisanList(prev => prev.filter(k => k.id!== id)) }
+    ]);
   };
 
   const handleLogin = () => {
@@ -536,14 +616,159 @@ export default function App() {
     <View style={styles.mainContainer}>
       <View style={{ flex: 1 }}>
         {activeTab === 'home' && (
-          <ScrollView contentContainerStyle={styles.buttonContainer}>
-            <Text style={styles.header}>TARZAN KATLAM</Text>
-            {HOME_BUTTONS.map(btn => (
-              <TouchableOpacity key={btn.id} style={[styles.button, { backgroundColor: btn.color }]} onPress={() => Alert.alert(btn.name)}>
-                <Text style={styles.buttonText}>{btn.name}</Text>
+          showKisanScreen? (
+            <View style={{ flex: 1, backgroundColor: '#F5F7FB' }}>
+              <View style={styles.calcPageHeader}>
+                <TouchableOpacity onPress={()=>setShowKisanScreen(false)} style={{ padding: 5 }}><Text style={styles.backText}>‹ वापस</Text></TouchableOpacity>
+                <Text style={styles.calcPageTitle}>किसान</Text>
+                <View style={{ width: 50 }} />
+              </View>
+
+              {(() => {
+                const totalKisan = kisanList.length;
+                const sumTotal = kisanList.reduce((s,k)=> s + (parseFloat(k.totalRashi)||0), 0);
+                const sumAdv = kisanList.reduce((s,k)=> s + (parseFloat(k.advanceRashi)||0), 0);
+                const sumBachat = sumTotal - sumAdv;
+                return (
+                  <View style={{ padding: 12 }}>
+                    <View style={[styles.orderTopBox, { backgroundColor: '#E8F5E9', borderColor: '#2E9D5A', borderWidth: 1 }]}>
+                      <Text style={[styles.orderTopText, { fontSize: 16, color: '#2E7D32' }]}>कुल किसान: {totalKisan}</Text>
+                      <Text style={{ fontSize: 13, color: '#1A237E', marginTop: 6, fontWeight: 'bold', textAlign: 'center' }}>
+                        💰 कुल राशि: ₹{sumTotal} | एडवांस: ₹{sumAdv} | बचत: ₹{sumBachat}
+                      </Text>
+                    </View>
+                    <View style={styles.searchBox}>
+                      <TextInput style={styles.searchInput} placeholder="🔍 सर्च करें (नाम / मोबाइल नं. / पता)" placeholderTextColor="#888" value={searchKisan} onChangeText={setSearchKisan} />
+                    </View>
+                  </View>
+                );
+              })()}
+
+              <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 100 }}>
+                {kisanList.filter(k=>{
+                  if(!searchKisan.trim()) return true;
+                  const q=searchKisan.toLowerCase();
+                  return k.name.toLowerCase().includes(q) || k.mobile.includes(q) || k.pata.toLowerCase().includes(q);
+                }).length===0? (
+                  <View style={{ alignItems: 'center', marginTop: 80 }}><Text style={{ color: '#999' }}>{kisanList.length===0? 'कोई किसान नहीं, + से जोड़ें' : 'कुछ नहीं मिला'}</Text></View>
+                ) : kisanList.filter(k=>{
+                  if(!searchKisan.trim()) return true;
+                  const q=searchKisan.toLowerCase();
+                  return k.name.toLowerCase().includes(q) || k.mobile.includes(q) || k.pata.toLowerCase().includes(q);
+                }).map(item=>{
+                  const bachat = (parseFloat(item.totalRashi)||0) - (parseFloat(item.advanceRashi)||0);
+                  return (
+                    <TouchableOpacity key={item.id} activeOpacity={0.9} onPress={()=>setSelectedKisanDetail(item)} style={[styles.orderCard, { borderLeftColor: '#2E9D5A', borderLeftWidth: 4 }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#37474F' }}>{item.name}</Text>
+                        <Text style={{ marginLeft: 8, fontSize: 14 }}>👁️</Text>
+                      </View>
+                      <Text style={{ fontSize: 14, color: '#333', marginTop: 2 }}>{item.mobile} {item.pata}</Text>
+                      <Text style={{ fontSize: 13, color: '#444', marginTop: 6 }}>💰 टोटल: ₹{item.totalRashi} | एडवांस: ₹{item.advanceRashi} | बचत: ₹{bachat}</Text>
+                      <Text style={{ fontSize: 13, color: '#444', marginTop: 2 }}>🌾 घंटा: {item.ghanta} | ट्रॉली: {item.trolly}</Text>
+                      <Text style={{ fontSize: 11, color: '#888', marginTop: 4 }}>पूरी जानकारी देखने के लिए क्लिक करें</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                        <TouchableOpacity style={[styles.kisanBtn, { backgroundColor: '#4CAF50' }]} onPress={()=>Linking.openURL(`tel:${item.mobile}`)}><Text style={styles.kisanBtnText}>📞 कॉल</Text></TouchableOpacity>
+                        <TouchableOpacity style={[styles.kisanBtn, { backgroundColor: '#2E9D5A' }]} onPress={()=>Linking.openURL(`https://wa.me/91${item.mobile}?text=${encodeURIComponent('नमस्ते '+item.name+' जी! Tarzan Katlam 🚜')}`)}><Text style={styles.kisanBtnText}>🟢 व्हाट्सएप</Text></TouchableOpacity>
+                        <TouchableOpacity style={[styles.kisanBtn, { backgroundColor: '#4A90E2' }]} onPress={()=>Linking.openURL(`sms:${item.mobile}`)}><Text style={styles.kisanBtnText}>✉️ मैसेज</Text></TouchableOpacity>
+                        <TouchableOpacity style={[styles.kisanBtn, { backgroundColor: '#FF9800' }]} onPress={()=>handleEditKisan(item)}><Text style={styles.kisanBtnText}>✏️ एडिट करें</Text></TouchableOpacity>
+                        <TouchableOpacity style={[styles.kisanBtn, { backgroundColor: '#D32F2F' }]} onPress={()=>handleDeleteKisan(item.id)}><Text style={styles.kisanBtnText}>🗑️ डिलीट</Text></TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <TouchableOpacity style={styles.kisanFab} onPress={()=>{ setEditingKisanId(null); setKisanForm({ name: '', mobile: '', pata: '', totalRashi: '', advanceRashi: '', ghanta: '', trolly: '', karya: '', dinank: '' }); setShowKisanForm(true); }}>
+                <Text style={{ color: '#fff', fontSize: 28, fontWeight: 'bold' }}>+</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+
+              <Modal visible={!!selectedKisanDetail} animationType="slide" transparent>
+                <View style={styles.modalBg}>
+                  <View style={[styles.formCard, { maxHeight: '85%' }]}>
+                    <ScrollView>
+                      <Text style={styles.formTitle}>👨‍🌾 {selectedKisanDetail?.name}</Text>
+                      <View style={{ backgroundColor: '#F1F8E9', padding: 12, borderRadius: 10, marginTop: 10 }}>
+                        <Text style={styles.detailLine}>📞 मोबाइल: {selectedKisanDetail?.mobile}</Text>
+                        <Text style={styles.detailLine}>📍 पता: {selectedKisanDetail?.pata}</Text>
+                        <Text style={styles.detailLine}>💰 टोटल: ₹{selectedKisanDetail?.totalRashi}</Text>
+                        <Text style={styles.detailLine}>💵 एडवांस: ₹{selectedKisanDetail?.advanceRashi}</Text>
+                        <Text style={styles.detailLine}>💳 बचत: ₹{selectedKisanDetail? (parseFloat(selectedKisanDetail.totalRashi||'0')-parseFloat(selectedKisanDetail.advanceRashi||'0')) : 0}</Text>
+                        <Text style={styles.detailLine}>⏳ घंटा: {selectedKisanDetail?.ghanta}</Text>
+                        <Text style={styles.detailLine}>🚛 ट्रॉली: {selectedKisanDetail?.trolly}</Text>
+                        {selectedKisanDetail?.karya? <Text style={styles.detailLine}>🔧 कार्य: {selectedKisanDetail.karya}</Text> : null}
+                        {selectedKisanDetail?.dinank? <Text style={styles.detailLine}>📅 दिनांक: {selectedKisanDetail.dinank}</Text> : null}
+                      </View>
+                      <TouchableOpacity style={[styles.blueButton, { backgroundColor: '#2E9D5A', marginTop: 18 }]} onPress={()=>setSelectedKisanDetail(null)}>
+                        <Text style={styles.blueButtonText}>बंद करें</Text>
+                      </TouchableOpacity>
+                    </ScrollView>
+                  </View>
+                </View>
+              </Modal>
+
+              <Modal visible={showKisanForm} animationType="slide" transparent>
+                <View style={styles.modalBg}>
+                  <View style={[styles.formCard, { maxHeight: '92%' }]}>
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                      <Text style={styles.formTitle}>{editingKisanId? '✏️ किसान एडिट करें' : '➕ नया किसान जोड़ें'}</Text>
+                      <Text style={styles.timeLabel}>किसान का नाम *</Text>
+                      <TextInput style={styles.input} placeholder="रामदेव" value={kisanForm.name} onChangeText={v=>setKisanForm({...kisanForm, name: v})} />
+                      <Text style={[styles.timeLabel,{marginTop:10}]}>मोबाइल नं. *</Text>
+                      <TextInput style={styles.input} placeholder="8629984119" keyboardType="phone-pad" value={kisanForm.mobile} onChangeText={v=>setKisanForm({...kisanForm, mobile: v})} />
+                      <Text style={[styles.timeLabel,{marginTop:10}]}>पता / गांव</Text>
+                      <TextInput style={styles.input} placeholder="मैनपुर" value={kisanForm.pata} onChangeText={v=>setKisanForm({...kisanForm, pata: v})} />
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.timeLabel}>टोटल राशि ₹ *</Text>
+                          <TextInput style={styles.input} placeholder="3500" keyboardType="numeric" value={kisanForm.totalRashi} onChangeText={v=>setKisanForm({...kisanForm, totalRashi: v})} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.timeLabel}>एडवांस ₹</Text>
+                          <TextInput style={styles.input} placeholder="1500" keyboardType="numeric" value={kisanForm.advanceRashi} onChangeText={v=>setKisanForm({...kisanForm, advanceRashi: v})} />
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.timeLabel}>घंटा</Text>
+                          <TextInput style={styles.input} placeholder="3 घंटा 10 मिनट" value={kisanForm.ghanta} onChangeText={v=>setKisanForm({...kisanForm, ghanta: v})} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.timeLabel}>ट्रॉली</Text>
+                          <TextInput style={styles.input} placeholder="2" keyboardType="numeric" value={kisanForm.trolly} onChangeText={v=>setKisanForm({...kisanForm, trolly: v})} />
+                        </View>
+                      </View>
+                      <Text style={[styles.timeLabel,{marginTop:10}]}>कार्य (वैकल्पिक)</Text>
+                      <TextInput style={styles.input} placeholder="धान कटाई" value={kisanForm.karya} onChangeText={v=>setKisanForm({...kisanForm, karya: v})} />
+                      <Text style={[styles.timeLabel,{marginTop:10}]}>दिनांक</Text>
+                      <TextInput style={styles.input} placeholder="25.9.2026" value={kisanForm.dinank} onChangeText={v=>setKisanForm({...kisanForm, dinank: v})} />
+                      <TouchableOpacity style={[styles.blueButton, { backgroundColor: '#2E9D5A', marginTop: 20 }]} onPress={handleSaveKisan}>
+                        <Text style={styles.blueButtonText}>💾 सेव करें</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={{ marginTop: 12, alignItems: 'center', padding: 10 }} onPress={()=>setShowKisanForm(false)}>
+                        <Text style={{ color: '#777' }}>बंद करें</Text>
+                      </TouchableOpacity>
+                    </ScrollView>
+                  </View>
+                </View>
+              </Modal>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={styles.buttonContainer}>
+              <Text style={styles.header}>TARZAN KATLAM</Text>
+              {HOME_BUTTONS.map(btn => {
+                const isKisan = btn.name.toLowerCase().includes('किसान') || btn.name.toLowerCase().includes('kisan');
+                return (
+                  <TouchableOpacity key={btn.id} style={[styles.button, { backgroundColor: btn.color }]} onPress={() => {
+                    if (isKisan) setShowKisanScreen(true);
+                    else Alert.alert(btn.name);
+                  }}>
+                    <Text style={styles.buttonText}>{btn.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )
         )}
         {activeTab === 'kharch' && renderKharchMain()}
         {activeTab === 'order' && renderOrderMain()}
@@ -1310,6 +1535,37 @@ const styles = StyleSheet.create({
   trollyText: {
     color: '#555',
     fontWeight: '600'
+  },
+  kisanBtn: {
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    minWidth: 75,
+    alignItems: 'center',
+    elevation: 1
+  },
+  kisanBtnText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold'
+  },
+  kisanFab: {
+    position: 'absolute',
+    right: 18,
+    bottom: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2E9D5A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6
+  },
+  detailLine: {
+    fontSize: 14,
+    color: '#333',
+    marginTop: 6,
+    lineHeight: 20
   },
   trollyActiveText: {
     color: '#fff',
